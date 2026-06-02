@@ -9,9 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ReservoirsRouteImport } from './routes/reservoirs'
 import { Route as PumpsRouteImport } from './routes/pumps'
 import { Route as IndexRouteImport } from './routes/index'
 
+const ReservoirsRoute = ReservoirsRouteImport.update({
+  id: '/reservoirs',
+  path: '/reservoirs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PumpsRoute = PumpsRouteImport.update({
   id: '/pumps',
   path: '/pumps',
@@ -26,31 +32,42 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/pumps'
+  fullPaths: '/' | '/pumps' | '/reservoirs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/pumps'
-  id: '__root__' | '/' | '/pumps'
+  to: '/' | '/pumps' | '/reservoirs'
+  id: '__root__' | '/' | '/pumps' | '/reservoirs'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PumpsRoute: typeof PumpsRoute
+  ReservoirsRoute: typeof ReservoirsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/reservoirs': {
+      id: '/reservoirs'
+      path: '/reservoirs'
+      fullPath: '/reservoirs'
+      preLoaderRoute: typeof ReservoirsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pumps': {
       id: '/pumps'
       path: '/pumps'
@@ -71,6 +88,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PumpsRoute: PumpsRoute,
+  ReservoirsRoute: ReservoirsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
