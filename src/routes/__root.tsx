@@ -11,6 +11,11 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
+import { TopHeader } from "@/components/TopHeader";
+import { PageTransition } from "@/components/PageTransition";
+import { TelemetryProvider } from "@/contexts/TelemetryContext";
 
 function NotFoundComponent() {
   return (
@@ -118,8 +123,22 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <TelemetryProvider>
+        <SidebarProvider>
+          <div className="flex min-h-screen w-full bg-background text-foreground">
+            <AppSidebar />
+            <SidebarInset className="flex min-w-0 flex-1 flex-col">
+              <TopHeader />
+              <main className="flex-1 p-6">
+                <PageTransition>
+                  {/* Required: nested routes render here. */}
+                  <Outlet />
+                </PageTransition>
+              </main>
+            </SidebarInset>
+          </div>
+        </SidebarProvider>
+      </TelemetryProvider>
     </QueryClientProvider>
   );
 }

@@ -9,8 +9,32 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TrendsRouteImport } from './routes/trends'
+import { Route as ReservoirsRouteImport } from './routes/reservoirs'
+import { Route as PumpsRouteImport } from './routes/pumps'
+import { Route as AlarmsRouteImport } from './routes/alarms'
 import { Route as IndexRouteImport } from './routes/index'
 
+const TrendsRoute = TrendsRouteImport.update({
+  id: '/trends',
+  path: '/trends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReservoirsRoute = ReservoirsRouteImport.update({
+  id: '/reservoirs',
+  path: '/reservoirs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PumpsRoute = PumpsRouteImport.update({
+  id: '/pumps',
+  path: '/pumps',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AlarmsRoute = AlarmsRouteImport.update({
+  id: '/alarms',
+  path: '/alarms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -19,28 +43,72 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/alarms': typeof AlarmsRoute
+  '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
+  '/trends': typeof TrendsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/alarms': typeof AlarmsRoute
+  '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
+  '/trends': typeof TrendsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/alarms': typeof AlarmsRoute
+  '/pumps': typeof PumpsRoute
+  '/reservoirs': typeof ReservoirsRoute
+  '/trends': typeof TrendsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/alarms' | '/pumps' | '/reservoirs' | '/trends'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/alarms' | '/pumps' | '/reservoirs' | '/trends'
+  id: '__root__' | '/' | '/alarms' | '/pumps' | '/reservoirs' | '/trends'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AlarmsRoute: typeof AlarmsRoute
+  PumpsRoute: typeof PumpsRoute
+  ReservoirsRoute: typeof ReservoirsRoute
+  TrendsRoute: typeof TrendsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/trends': {
+      id: '/trends'
+      path: '/trends'
+      fullPath: '/trends'
+      preLoaderRoute: typeof TrendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reservoirs': {
+      id: '/reservoirs'
+      path: '/reservoirs'
+      fullPath: '/reservoirs'
+      preLoaderRoute: typeof ReservoirsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pumps': {
+      id: '/pumps'
+      path: '/pumps'
+      fullPath: '/pumps'
+      preLoaderRoute: typeof PumpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/alarms': {
+      id: '/alarms'
+      path: '/alarms'
+      fullPath: '/alarms'
+      preLoaderRoute: typeof AlarmsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -53,17 +121,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlarmsRoute: AlarmsRoute,
+  PumpsRoute: PumpsRoute,
+  ReservoirsRoute: ReservoirsRoute,
+  TrendsRoute: TrendsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
