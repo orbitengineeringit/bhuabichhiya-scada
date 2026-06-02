@@ -33,7 +33,7 @@ export function AppSidebar() {
             <Waves className="h-5 w-5" />
           </div>
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="text-sm font-semibold tracking-tight">HydroSCADA</span>
+            <span className="text-sm font-semibold tracking-tight">Bua Bicchiya SCADA</span>
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
               Water Supply Control
             </span>
