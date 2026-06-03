@@ -16,9 +16,18 @@ interface TagUpdate {
   value: number;
   section: 'oht' | 'intake' | 'wtp';
   topic: string;
+  reason?: 'interval' | 'abnormal' | 'alarm' | 'state_change';
 }
 
 const DISCONNECT_TIMEOUT_MS = 10000;
+// Historian persistence policy:
+//  - Normal data: save every 5 minutes per tag (keeps DB small)
+//  - Abnormal fluctuation: save immediately if value changes > ABNORMAL_DELTA_PCT of range since last save
+//  - Alarm crossing: save immediately if value crosses high/low setpoint
+//  - Digital state change (pump on/off): save immediately
+const SAVE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
+const ABNORMAL_DELTA_PCT = 0.12;        // 12% of sensor range
+const FLUSH_INTERVAL_MS = 30 * 1000;    // batch-write queue to DB every 30s
 
 export const useMqttTagSync = (
   intakeTags: TagData[],
@@ -35,6 +44,8 @@ export const useMqttTagSync = (
   const tagConfigCache = useRef<Map<string, string>>(new Map());
   const lastCacheRefresh = useRef<number>(0);
   const CACHE_TTL = 30000;
+  // Per-tag last-saved tracker for deadband + interval logic
+  const lastSaved = useRef<Map<string, { value: number; at: number; inAlarm: boolean }>>(new Map());
 
   useEffect(() => {
     disconnectCheckInterval.current = setInterval(() => {
@@ -103,14 +114,16 @@ export const useMqttTagSync = (
           .map(log => ({
             tag_config_id: tagConfigCache.current.get(`${log.section}-${log.tagId}`)!,
             tag_id: log.tagId, section: log.section, value: log.value,
-            timestamp: new Date().toISOString(), source: 'mqtt', mqtt_topic: log.topic,
+            timestamp: new Date().toISOString(),
+            source: log.reason ? `mqtt:${log.reason}` : 'mqtt',
+            mqtt_topic: log.topic,
           }));
         if (logsToInsert.length > 0) {
           const { error } = await supabase.from('historian_logs').insert(logsToInsert);
           if (error) { logError('TagSync.batchWrite', error); pendingLogs.current.push(...logsToWrite); }
         }
       } catch (error) { logError('TagSync.batchWrite', error); pendingLogs.current.push(...logsToWrite); }
-    }, 10000);
+    }, FLUSH_INTERVAL_MS);
     return () => { if (flushInterval.current) { clearInterval(flushInterval.current); flushInterval.current = null; } };
   }, [ensureTagConfigExists, refreshTagConfigCache]);
 
@@ -202,11 +215,39 @@ export const useMqttTagSync = (
       });
 
       if (shouldLog) {
-        pendingLogs.current.push({
-          tagId: sensorId, value: displayValue,
-          section: section as 'oht' | 'intake' | 'wtp',
-          topic,
-        });
+        // ---- Smart save decision: 5-min interval OR abnormal change OR alarm crossing ----
+        const key = `${section}-${sensorId}`;
+        const now = Date.now();
+        const prev = lastSaved.current.get(key);
+
+        const highTh = existingTag?.highSetpoint ?? existingTag?.max ?? sensor.max;
+        const lowTh  = existingTag?.lowSetpoint  ?? existingTag?.min ?? sensor.min;
+        const inAlarm = displayValue > highTh || displayValue < lowTh;
+
+        const range = Math.max(1e-6, (sensor.max ?? 1) - (sensor.min ?? 0));
+        const deltaPct = prev ? Math.abs(displayValue - prev.value) / range : 1;
+
+        let reason: TagUpdate['reason'] | null = null;
+        if (!prev) {
+          reason = 'interval';
+        } else if (sensor.type !== 'analog' && displayValue !== prev.value) {
+          reason = 'state_change';                     // pump/valve on↔off
+        } else if (inAlarm !== prev.inAlarm) {
+          reason = 'alarm';                            // alarm enter/exit
+        } else if (deltaPct >= ABNORMAL_DELTA_PCT) {
+          reason = 'abnormal';                         // sudden fluctuation
+        } else if (now - prev.at >= SAVE_INTERVAL_MS) {
+          reason = 'interval';                         // normal 5-min checkpoint
+        }
+
+        if (reason) {
+          pendingLogs.current.push({
+            tagId: sensorId, value: displayValue,
+            section: section as 'oht' | 'intake' | 'wtp',
+            topic, reason,
+          });
+          lastSaved.current.set(key, { value: displayValue, at: now, inAlarm });
+        }
       }
     }
   }, [intakeTags, ohtTags, wtpTags, setIntakeTags, setOhtTags, setWtpTags, addAlarm]);

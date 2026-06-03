@@ -635,26 +635,37 @@ const PlantAssistant: React.FC<PlantAssistantProps> = ({ variant = 'compact', on
 
   return (
     <div className={cn(
-      'flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-xl relative',
+      'flex flex-col bg-card border border-border rounded-2xl overflow-hidden shadow-2xl relative',
+      'ring-1 ring-violet-500/10',
       containerHeight
     )}>
-      {/* Decorative gradient blobs */}
-      <div className="pointer-events-none absolute -top-20 -right-20 h-56 w-56 rounded-full bg-primary/20 blur-3xl opacity-60" />
-      <div className="pointer-events-none absolute -bottom-24 -left-16 h-56 w-56 rounded-full bg-accent/20 blur-3xl opacity-50" />
+      {/* Decorative aurora — cyan / violet / pink */}
+      <div className="pointer-events-none absolute -top-24 -right-24 h-64 w-64 rounded-full bg-cyan-500/25 blur-3xl opacity-70 animate-pulse" />
+      <div className="pointer-events-none absolute top-1/3 -left-20 h-56 w-56 rounded-full bg-violet-500/25 blur-3xl opacity-60" />
+      <div className="pointer-events-none absolute -bottom-24 right-1/4 h-56 w-56 rounded-full bg-pink-500/20 blur-3xl opacity-50" />
+      {/* Subtle grid pattern */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.035] dark:opacity-[0.06]"
+        style={{
+          backgroundImage:
+            'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+          backgroundSize: '22px 22px',
+        }}
+      />
 
       {/* Header */}
-      <div className="relative flex items-center justify-between px-4 py-3 border-b border-border bg-gradient-to-r from-primary/10 via-card to-accent/10 backdrop-blur">
+      <div className="relative flex items-center justify-between px-4 py-3 border-b border-violet-500/20 bg-gradient-to-r from-cyan-500/10 via-violet-500/10 to-pink-500/10 backdrop-blur">
         <div className="flex items-center gap-2.5">
           <div className="relative">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-primary/60 shadow-lg shadow-primary/30">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500 via-violet-500 to-pink-500 shadow-lg shadow-violet-500/40">
+              <Sparkles className="h-4 w-4 text-white" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-card animate-pulse" />
           </div>
           <div>
             <h3 className="text-sm font-bold text-foreground tracking-tight flex items-center gap-1.5">
-              Plant Assistant
-              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-primary/15 text-primary uppercase tracking-wider">AI</span>
+              <span className="bg-gradient-to-r from-cyan-500 via-violet-500 to-pink-500 bg-clip-text text-transparent">Plant Assistant</span>
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-md bg-gradient-to-r from-cyan-500/20 to-violet-500/20 text-violet-600 dark:text-violet-300 border border-violet-500/30 uppercase tracking-wider">AI</span>
             </h3>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
               <span>Live + 30-day insights</span>
