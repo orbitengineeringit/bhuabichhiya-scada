@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useScada } from '@/contexts/ScadaContext';
+import SensorStatusStrip from './SensorStatusStrip';
 
 /**
  * Intake Well - Process Simulation View
@@ -328,6 +329,10 @@ const IntakeProcessSimulation: React.FC = () => {
 
   return (
     <div className="w-full premium-card rounded-xl p-3 md:p-5 animate-fade-in overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <SensorStatusStrip
+        tags={intakeTags}
+        sensorIds={['INT-PT1', 'INT-PT2', 'INT-LT', 'INT-Flow', 'INT-Totalizer', 'INT-Pump1', 'INT-Pump2', 'INT-KW']}
+      />
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ maxHeight: '88vh', minWidth: '650px' }}>
         <defs>
           <linearGradient id="p-pipe-h" x1="0" y1="0" x2="0" y2="1">

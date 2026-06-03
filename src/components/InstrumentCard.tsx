@@ -43,16 +43,14 @@ const InstrumentCard: React.FC<InstrumentCardProps> = memo(({ tag, sensor, secti
     }
   }, [tag.value]);
 
-  // Derive connection status from tag's own lastDataTime & status (set by MqttTagSync)
-  const connectionStatus = useMemo(() => {
+  // Derive connection status: binary ON (data flowing) or OFF (no data).
+  // No "waiting/standby" state — MQTT either delivers or it doesn't.
+  const connectionStatus = useMemo<'connected' | 'no-data'>(() => {
     if (tag.status === 'disconnected') return 'no-data';
     if (tag.lastDataTime) {
       const elapsed = Date.now() - new Date(tag.lastDataTime).getTime();
-      if (elapsed > 30000) return 'no-data';
-      if (elapsed > 10000) return 'standby';
-      return 'connected';
+      return elapsed > 30000 ? 'no-data' : 'connected';
     }
-    // If tag has source mqtt and value exists, consider it connected
     if (tag.source === 'mqtt') return 'connected';
     return 'no-data';
   }, [tag.status, tag.lastDataTime, tag.source, tag.value]);
@@ -188,9 +186,6 @@ const InstrumentCard: React.FC<InstrumentCardProps> = memo(({ tag, sensor, secti
     if (connectionStatus === 'connected') {
       label = 'ON';
       className = 'bg-success/15 text-success border border-success/30';
-    } else if (connectionStatus === 'standby') {
-      label = 'WAIT';
-      className = 'bg-warning/15 text-warning border border-warning/30';
     } else {
       label = 'OFF';
       className = 'bg-destructive/15 text-destructive border border-destructive/30 animate-pulse';
@@ -214,7 +209,7 @@ const InstrumentCard: React.FC<InstrumentCardProps> = memo(({ tag, sensor, secti
               {connectionStatus === 'connected' ? (
                 <Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-success shrink-0" />
               ) : (
-                <WifiOff className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${connectionStatus === 'no-data' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
+                <WifiOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-destructive animate-pulse" />
               )}
               <span className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{sensor.label}</span>
             </div>
@@ -250,7 +245,7 @@ const InstrumentCard: React.FC<InstrumentCardProps> = memo(({ tag, sensor, secti
               {connectionStatus === 'connected' ? (
                 <Wifi className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-success shrink-0" />
               ) : (
-                <WifiOff className={`w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 ${connectionStatus === 'no-data' ? 'text-destructive animate-pulse' : 'text-warning'}`} />
+                <WifiOff className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0 text-destructive animate-pulse" />
               )}
               <span className="text-[10px] sm:text-xs text-muted-foreground font-medium truncate">{sensor.label}</span>
               {getHealthBadge()}
