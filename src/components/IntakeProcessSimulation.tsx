@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useScada } from '@/contexts/ScadaContext';
-import SvgStatusBadge from './SvgStatusBadge';
+import SensorStatusStrip from './SensorStatusStrip';
 
 /**
  * Intake Well - Process Simulation View
@@ -329,6 +329,10 @@ const IntakeProcessSimulation: React.FC = () => {
 
   return (
     <div className="w-full premium-card rounded-xl p-3 md:p-5 animate-fade-in overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <SensorStatusStrip
+        tags={intakeTags}
+        sensorIds={['INT-PT1', 'INT-PT2', 'INT-LT', 'INT-Flow', 'INT-Totalizer', 'INT-Pump1', 'INT-Pump2', 'INT-KW']}
+      />
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ maxHeight: '88vh', minWidth: '650px' }}>
         <defs>
           <linearGradient id="p-pipe-h" x1="0" y1="0" x2="0" y2="1">
@@ -659,24 +663,6 @@ const IntakeProcessSimulation: React.FC = () => {
 
         {renderPump(p1x, pump1Running, 'VT 01', pt1Val, 'left')}
         {renderPump(p2x, pump2Running, 'VT 02', pt2Val, 'right')}
-
-        {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
-        {/* PT gauges: placed to the right of each gauge (clear empty space) */}
-        <SvgStatusBadge tag={pt1Tag} x={gauge1X + gaugeR + 32} y={gaugeY - gaugeR + 8} scale={1.2} />
-        <SvgStatusBadge tag={pt2Tag} x={gauge2X + gaugeR + 32} y={gaugeY - gaugeR + 8} scale={1.2} />
-        {/* PT 03 master gauge: badge to its RIGHT (label "PT 03" stays clean above) */}
-        <SvgStatusBadge tag={findTag('INT-CombinedPT')} x={sCx + 80 + pt03R + 36} y={140 - pt03R + 12} scale={1.3} />
-        {/* EFM 01: shifted left of the EFM block, well above header */}
-        <SvgStatusBadge tag={flowTag} x={1058 - 80} y={headerY - 130} scale={1.2} />
-        {/* Totalizer: to the LEFT of "Totalizer" label */}
-        <SvgStatusBadge tag={totalizerTag} x={1240 - 90} y={headerY + headerH + 4} scale={1.2} />
-        {/* Energy Meter: above the meter, clear of "Energy Meter" label */}
-        <SvgStatusBadge tag={kwTag} x={1260 - 90} y={headerY + headerH + 150} scale={1.2} />
-        {/* Pumps: well above motor with extra clearance from "VT 01/02" label */}
-        <SvgStatusBadge tag={pump1Tag} x={p1x - 55} y={motorTop - 10} scale={1.2} />
-        <SvgStatusBadge tag={pump2Tag} x={p2x + 55} y={motorTop - 10} scale={1.2} />
-        {/* RLT level: keep above the scale */}
-        <SvgStatusBadge tag={ltTag} x={sR + 83} y={sTop - 32} scale={1.2} />
 
         {/* RLT */}
         {(() => {

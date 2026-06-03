@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BuaBicchiyaSensor } from '@/config/buaBicchiyaSensors';
-import SvgStatusBadge from './SvgStatusBadge';
+import SensorStatusStrip from './SensorStatusStrip';
 
 interface CircularGaugeProps {
   cx: number;
@@ -191,6 +191,12 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
 
   return (
     <div className="w-full relative overflow-hidden bg-background border border-border/50 rounded-2xl p-1 md:p-3">
+      <div className="relative z-10">
+        <SensorStatusStrip
+          tags={tags}
+          sensorIds={sensors.filter(s => !s.notInstalled).map(s => s.id)}
+        />
+      </div>
       {/* Blueprint Grid Background Pattern */}
       <div
         className="w-full h-full min-h-[350px]"
@@ -434,18 +440,6 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
             <circle cx={500} cy={pillarY + pillarH} r="6" fill="#475569" />
             <CircularGauge cx={500} cy={pillarY + pillarH - 100} r={55} value={ptVal} min={0} max={10} label="PT Inlet" unit="Bar" />
           </g>
-
-          {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
-          {/* LT (Tank Level): above tank dome, clear of "TANK LEVEL" panel */}
-          <SvgStatusBadge tag={ltTag} x={tcx - 75} y={ty + 35} scale={1.5} />
-          {/* PT Inlet: placed to the LEFT of the gauge (free space) */}
-          <SvgStatusBadge tag={ptTag} x={500 - 85} y={pillarY + pillarH - 100} scale={1.5} />
-          {/* Flow IN: placed to the LEFT of the EFM body (clear of "Flow IN" label) */}
-          <SvgStatusBadge tag={fInTag} x={300 - 110} y={pillarY + pillarH - 95} scale={1.5} />
-          {/* Flow OUT: just above the "OUTLET (To City)" label box (right-side free space) */}
-          <SvgStatusBadge tag={fOutTag} x={svgW - 100} y={pillarY + pillarH - 70} scale={1.5} />
-          {/* Totalizer: to the RIGHT of the flow-rate panel */}
-          {totTag && <SvgStatusBadge tag={totTag} x={300 + 130} y={pillarY + pillarH + 90} scale={1.5} />}
 
         </svg>
       </div>
