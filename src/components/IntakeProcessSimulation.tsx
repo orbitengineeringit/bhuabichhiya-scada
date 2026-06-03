@@ -661,15 +661,22 @@ const IntakeProcessSimulation: React.FC = () => {
         {renderPump(p2x, pump2Running, 'VT 02', pt2Val, 'right')}
 
         {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
-        <SvgStatusBadge tag={pt1Tag} x={gauge1X} y={gaugeY - gaugeR - 30} scale={1.2} />
-        <SvgStatusBadge tag={pt2Tag} x={gauge2X} y={gaugeY - gaugeR - 30} scale={1.2} />
-        <SvgStatusBadge tag={findTag('INT-CombinedPT')} x={sCx + 80} y={140 - pt03R - 22} scale={1.3} />
-        <SvgStatusBadge tag={flowTag} x={1058} y={headerY - 110} scale={1.2} />
-        <SvgStatusBadge tag={totalizerTag} x={1240} y={headerY + headerH + 4} scale={1.2} />
-        <SvgStatusBadge tag={kwTag} x={1260} y={headerY + headerH + 128} scale={1.2} />
-        <SvgStatusBadge tag={pump1Tag} x={p1x} y={motorTop - 28} scale={1.2} />
-        <SvgStatusBadge tag={pump2Tag} x={p2x} y={motorTop - 28} scale={1.2} />
-        <SvgStatusBadge tag={ltTag} x={sR + 83} y={sTop - 30} scale={1.2} />
+        {/* PT gauges: placed to the right of each gauge (clear empty space) */}
+        <SvgStatusBadge tag={pt1Tag} x={gauge1X + gaugeR + 32} y={gaugeY - gaugeR + 8} scale={1.2} />
+        <SvgStatusBadge tag={pt2Tag} x={gauge2X + gaugeR + 32} y={gaugeY - gaugeR + 8} scale={1.2} />
+        {/* PT 03 master gauge: badge to its RIGHT (label "PT 03" stays clean above) */}
+        <SvgStatusBadge tag={findTag('INT-CombinedPT')} x={sCx + 80 + pt03R + 36} y={140 - pt03R + 12} scale={1.3} />
+        {/* EFM 01: shifted left of the EFM block, well above header */}
+        <SvgStatusBadge tag={flowTag} x={1058 - 80} y={headerY - 130} scale={1.2} />
+        {/* Totalizer: to the LEFT of "Totalizer" label */}
+        <SvgStatusBadge tag={totalizerTag} x={1240 - 90} y={headerY + headerH + 4} scale={1.2} />
+        {/* Energy Meter: above the meter, clear of "Energy Meter" label */}
+        <SvgStatusBadge tag={kwTag} x={1260 - 90} y={headerY + headerH + 150} scale={1.2} />
+        {/* Pumps: well above motor with extra clearance from "VT 01/02" label */}
+        <SvgStatusBadge tag={pump1Tag} x={p1x - 55} y={motorTop - 10} scale={1.2} />
+        <SvgStatusBadge tag={pump2Tag} x={p2x + 55} y={motorTop - 10} scale={1.2} />
+        {/* RLT level: keep above the scale */}
+        <SvgStatusBadge tag={ltTag} x={sR + 83} y={sTop - 32} scale={1.2} />
 
         {/* RLT */}
         {(() => {
