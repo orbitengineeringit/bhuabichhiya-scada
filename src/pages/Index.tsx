@@ -20,11 +20,13 @@ const Index = () => {
     );
   }
 
+  const installedTags = (tags: typeof intakeTags) => tags.filter(t => !t.notInstalled);
+
   const getDataActiveCount = (tags: typeof intakeTags) => {
-    return tags.filter(t => t.value !== 0 || (t.lastDataTime && t.lastDataTime.getTime() > 0)).length;
+    return installedTags(tags).filter(t => t.value !== 0 || (t.lastDataTime && t.lastDataTime.getTime() > 0)).length;
   };
 
-  const totalSensors = intakeTags.length + ohtTags.length + wtpTags.length;
+  const totalSensors = installedTags(intakeTags).length + installedTags(ohtTags).length + installedTags(wtpTags).length;
   const totalActive = getDataActiveCount(intakeTags) + getDataActiveCount(ohtTags) + getDataActiveCount(wtpTags);
 
   const cards = [
@@ -406,7 +408,7 @@ const Index = () => {
                     <div className="flex items-center justify-between mb-4 border-t border-slate-100 dark:border-white/10 pt-5">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(34,197,94,0.5)] pulse-live" />
-                        <span className="text-sm text-slate-700 dark:text-foreground font-semibold">{card.tags.length} Total Sensors</span>
+                        <span className="text-sm text-slate-700 dark:text-foreground font-semibold">{installedTags(card.tags).length} Total Sensors</span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-500 dark:text-muted-foreground bg-slate-100 dark:bg-black/30 px-2 py-1.5 rounded-md border border-slate-200 dark:border-white/5">
                         {lastUpdate.getTime() > 0 ? lastUpdate.toLocaleTimeString() : '--:--:--'}
