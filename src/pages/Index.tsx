@@ -339,7 +339,7 @@ const Index = () => {
                   <Droplet className="w-4 h-4 text-indigo-500" />
                 </div>
                 <div className="mt-2">
-                  <p className="text-xs sm:text-sm font-bold text-foreground leading-snug">13 MLD</p>
+                  <p className="text-xs sm:text-sm font-bold text-foreground leading-snug">1.8 MLD</p>
                   <p className="text-[10px] font-semibold text-muted-foreground/80 mt-0.5">Million Litres / Day</p>
                 </div>
               </div>
