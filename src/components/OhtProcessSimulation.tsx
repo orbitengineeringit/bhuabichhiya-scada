@@ -436,11 +436,16 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
           </g>
 
           {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
-          <SvgStatusBadge tag={ltTag} x={tcx} y={ty - 10} scale={1.6} />
-          <SvgStatusBadge tag={ptTag} x={500} y={pillarY + pillarH - 170} scale={1.6} />
-          <SvgStatusBadge tag={fInTag} x={300} y={pillarY + pillarH - 165} scale={1.6} />
-          <SvgStatusBadge tag={fOutTag} x={svgW - 300} y={pillarY + pillarH - 65} scale={1.6} />
-          {totTag && <SvgStatusBadge tag={totTag} x={300} y={pillarY + pillarH + 155} scale={1.6} />}
+          {/* LT (Tank Level): above tank dome, clear of "TANK LEVEL" panel */}
+          <SvgStatusBadge tag={ltTag} x={tcx - 75} y={ty + 35} scale={1.5} />
+          {/* PT Inlet: placed to the LEFT of the gauge (free space) */}
+          <SvgStatusBadge tag={ptTag} x={500 - 85} y={pillarY + pillarH - 100} scale={1.5} />
+          {/* Flow IN: placed to the LEFT of the EFM body (clear of "Flow IN" label) */}
+          <SvgStatusBadge tag={fInTag} x={300 - 110} y={pillarY + pillarH - 95} scale={1.5} />
+          {/* Flow OUT: just above the "OUTLET (To City)" label box (right-side free space) */}
+          <SvgStatusBadge tag={fOutTag} x={svgW - 100} y={pillarY + pillarH - 70} scale={1.5} />
+          {/* Totalizer: to the RIGHT of the flow-rate panel */}
+          {totTag && <SvgStatusBadge tag={totTag} x={300 + 130} y={pillarY + pillarH + 90} scale={1.5} />}
 
         </svg>
       </div>
