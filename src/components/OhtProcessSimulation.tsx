@@ -1,5 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BuaBicchiyaSensor } from '@/config/buaBicchiyaSensors';
+import SensorStatusStrip from './SensorStatusStrip';
 
 interface CircularGaugeProps {
   cx: number;
