@@ -107,10 +107,17 @@ ALL_SENSORS.filter(s => s.derivedFromPt).forEach(pump => {
 // ==================== MQTT TOPICS ====================
 export const MQTT_TOPIC_KEYS = ['OHT1','OHT2','OHT3','INTAKE','WTP'] as const;
 
-// Mutable map — populated at runtime from DB config
-export const MQTT_TOPICS: Record<string, string> = Object.fromEntries(
-  MQTT_TOPIC_KEYS.map(k => [k, ''])
-);
+// Default topics for Bua Bicchiya plant — overridable from DB config
+export const DEFAULT_MQTT_TOPICS: Record<string, string> = {
+  INTAKE: 'Orbit/BICHIYA/INTAKE/0000000001',
+  WTP:    'Orbit/BICHIYA/WTP/0000000001',
+  OHT1:   'Orbit/BICHIYA/OHT01/0000000001',
+  OHT2:   'Orbit/BICHIYA/OHT02/0000000001',
+  OHT3:   'Orbit/BICHIYA/OHT03/0000000001',
+};
+
+// Mutable map — initialized with defaults, may be overridden from DB
+export const MQTT_TOPICS: Record<string, string> = { ...DEFAULT_MQTT_TOPICS };
 
 // Built dynamically when topics are loaded from DB
 export const TOPIC_TO_SECTION: Record<string, { section: SectionType; subsection?: string }> = {};
