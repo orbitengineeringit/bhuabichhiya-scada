@@ -65,26 +65,26 @@ export const INTAKE_SENSORS: BuaBicchiyaSensor[] = [
 // ==================== WTP SENSORS ====================
 export const WTP_SENSORS: BuaBicchiyaSensor[] = [
   // Levels
-  { id: 'WTP-LT-BW', mqttKey: 'BW_LEVEL', label: 'Level - Backwash', unit: '%', min: 0, max: 100, section: 'wtp', type: 'analog', instrumentType: 'lt' },
+  { id: 'WTP-LT-BW', mqttKey: 'BW_LEVEL', label: 'Level - Backwash', unit: '%', min: 0, max: 100, section: 'wtp', type: 'analog', instrumentType: 'lt', notInstalled: true },
   { id: 'WTP-LT-CW', mqttKey: 'CWR_LEVEL', label: 'Level - Clear Water', unit: '%', min: 0, max: 100, section: 'wtp', type: 'analog', instrumentType: 'lt' },
-  // Pressures (4 individual PTs + 2 combined)
-  { id: 'WTP-PT1', mqttKey: 'CWR_PT_01', label: 'HT Pump 1 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt' },
-  { id: 'WTP-PT2', mqttKey: 'CWR_PT_02', label: 'HT Pump 2 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt' },
-  { id: 'WTP-CombinedPT1', mqttKey: 'CWR_PT_03', label: 'Combined Pressure (P1+P2)', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'combined_pt' },
+  // Pressures (2 individual PTs + 1 combined)
+  { id: 'WTP-PT1', mqttKey: 'PT_01', label: 'HT Pump 1 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt' },
+  { id: 'WTP-PT2', mqttKey: 'PT_02', label: 'HT Pump 2 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt' },
+  { id: 'WTP-CombinedPT1', mqttKey: 'PT_03', label: 'Combined Pressure (P1+P2)', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'combined_pt' },
   { id: 'WTP-PT3', mqttKey: 'CWR_PT_04', label: 'HT Pump 3 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt', notInstalled: true },
   { id: 'WTP-PT4', mqttKey: 'CWR_PT_05', label: 'HT Pump 4 PT', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'pt', notInstalled: true },
   { id: 'WTP-CombinedPT2', mqttKey: 'CWR_PT_06', label: 'Combined Pressure (P3+P4)', unit: 'Bar', min: 0, max: 10, section: 'wtp', type: 'analog', instrumentType: 'combined_pt', notInstalled: true },
   // Flow (Inlet + Outlet)
-  { id: 'WTP-Flow-IN', mqttKey: 'FLOW_IN', label: 'Flow Meter (Inlet)', unit: 'm³/hr', min: 0, max: 200, section: 'wtp', type: 'analog', instrumentType: 'flow' },
-  { id: 'WTP-Flow-OUT', mqttKey: 'FLOW_OUT', label: 'Flow Meter (Outlet)', unit: 'm³/hr', min: 0, max: 200, section: 'wtp', type: 'analog', instrumentType: 'flow' },
-  { id: 'WTP-Totalizer', mqttKey: '', label: 'Totalizer', unit: 'm³', min: 0, max: 999999, section: 'wtp', type: 'totalizer', instrumentType: 'totalizer' },
+  { id: 'WTP-Flow-IN', mqttKey: 'FLOW', label: 'Flow Meter (Inlet)', unit: 'm³/hr', min: 0, max: 200, section: 'wtp', type: 'analog', instrumentType: 'flow' },
+  { id: 'WTP-Flow-OUT', mqttKey: 'FLOW_OUT', label: 'Flow Meter (Outlet)', unit: 'm³/hr', min: 0, max: 200, section: 'wtp', type: 'analog', instrumentType: 'flow', notInstalled: true },
+  { id: 'WTP-Totalizer', mqttKey: 'TOTALIZER', label: 'Totalizer', unit: 'm³', min: 0, max: 999999, section: 'wtp', type: 'totalizer', instrumentType: 'totalizer' },
   // Inlet analyzers (not installed in this WTP)
   { id: 'WTP-PH-IN', mqttKey: 'RAW_PH', label: 'pH Analyzer (Inlet)', unit: 'pH', min: 0, max: 14, section: 'wtp', subsection: 'inlet', type: 'analog', instrumentType: 'ph', notInstalled: true },
   { id: 'WTP-TA-IN', mqttKey: 'RAW_TR', label: 'Turbidity (Inlet)', unit: 'NTU', min: 0, max: 100, section: 'wtp', subsection: 'inlet', type: 'analog', instrumentType: 'turbidity', notInstalled: true },
   // Outlet analyzers
-  { id: 'WTP-PH', mqttKey: 'CW_PH', label: 'pH Analyzer (Outlet)', unit: 'pH', min: 0, max: 14, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'ph' },
-  { id: 'WTP-CL', mqttKey: 'CW_CL', label: 'Chlorine (Outlet)', unit: 'mg/L', min: 0, max: 5, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'chlorine' },
-  { id: 'WTP-TA', mqttKey: 'CW_TR', label: 'Turbidity (Outlet)', unit: 'NTU', min: 0, max: 100, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'turbidity' },
+  { id: 'WTP-PH', mqttKey: 'PH', label: 'pH Analyzer (Outlet)', unit: 'pH', min: 0, max: 14, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'ph' },
+  { id: 'WTP-CL', mqttKey: 'CL', label: 'Chlorine (Outlet)', unit: 'mg/L', min: 0, max: 5, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'chlorine' },
+  { id: 'WTP-TA', mqttKey: 'TR', label: 'Turbidity (Outlet)', unit: 'NTU', min: 0, max: 100, section: 'wtp', subsection: 'outlet', type: 'analog', instrumentType: 'turbidity' },
   // Energy Meter (MFM) - Active
   { id: 'WTP-KW', mqttKey: 'KW', label: 'Energy Meter (MFM)', unit: 'kW', min: 0, max: 100, section: 'wtp', type: 'analog', instrumentType: 'kw' },
   // Pumps (derived from PT status — no MQTT key)
@@ -173,4 +173,4 @@ export const getPumpSensors = (section: SectionType): BuaBicchiyaSensor[] => {
 // Valid MQTT keys per section (only keys that actually come from MQTT)
 export const VALID_OHT_KEYS = ['PT', 'LEVEL', 'FLOW_IN', 'FLOW_OUT', 'FCV'];
 export const VALID_INTAKE_KEYS = ['PT_01', 'PT_02', 'PT_COM', 'LEVEL', 'FLOW', 'KW'];
-export const VALID_WTP_KEYS = ['CWR_LEVEL', 'BW_LEVEL', 'CWR_PT_01', 'CWR_PT_02', 'CWR_PT_03', 'CWR_PT_04', 'CWR_PT_05', 'CWR_PT_06', 'FLOW_IN', 'FLOW_OUT', 'RAW_PH', 'RAW_TR', 'CW_PH', 'CW_CL', 'CW_TR'];
+export const VALID_WTP_KEYS = ['CWR_LEVEL', 'BW_LEVEL', 'PT_01', 'PT_02', 'PT_03', 'CWR_PT_04', 'CWR_PT_05', 'CWR_PT_06', 'FLOW', 'FLOW_IN', 'FLOW_OUT', 'PH', 'CL', 'TR', 'RAW_PH', 'RAW_TR', 'CW_PH', 'CW_CL', 'CW_TR', 'TOTALIZER', 'KW'];
