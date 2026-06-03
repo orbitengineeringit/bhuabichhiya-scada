@@ -1293,19 +1293,30 @@ const WtpProcessSimulation: React.FC = () => {
         </g>
 
         {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
-        <SvgStatusBadge tag={findTag('WTP-Flow-IN')} x={efmInX + 60} y={inletPipeY - 110} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-LT-BW')} x={bwTankX + bwTankW / 2} y={bwTankY - 28} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-LT-CW')} x={cwrX + cwrW / 2} y={cwrY - 24} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-PT1')} x={pump1X + pumpOutletOffsetX} y={ptGaugeY - 110} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-PT2')} x={pump2X + pumpOutletOffsetX} y={ptGaugeY - 110} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-CombinedPT1')} x={comGaugeX} y={comGaugeCenterY - 70} scale={1.5} />
-        <SvgStatusBadge tag={findTag('WTP-PT5')} x={comGaugeX + 240} y={comGaugeCenterY - 70} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-Flow-OUT')} x={outletEfmX} y={mergeY - 130} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-PH')} x={outletAnalyzerX} y={mergeY + 10} scale={1.3} />
-        <SvgStatusBadge tag={findTag('WTP-CL')} x={outletAnalyzerX + 90} y={mergeY + 10} scale={1.3} />
-        <SvgStatusBadge tag={findTag('WTP-TA')} x={outletAnalyzerX + 180} y={mergeY + 10} scale={1.3} />
-        <SvgStatusBadge tag={findTag('WTP-Totalizer')} x={totalizerX} y={totalizerY - 28} scale={1.4} />
-        <SvgStatusBadge tag={findTag('WTP-KW')} x={energyMeterX + 70} y={energyMeterY - 28} scale={1.4} />
+        {/* EFM IN: above the inlet pipe, well clear of the "EFM IN" label */}
+        <SvgStatusBadge tag={findTag('WTP-Flow-IN')} x={efmInX - 35} y={inletPipeY - 60} scale={1.4} />
+        {/* LT-BW: above BACKWASH tank with extra clearance for label */}
+        <SvgStatusBadge tag={findTag('WTP-LT-BW')} x={bwTankX + bwTankW / 2} y={bwTankY - 55} scale={1.4} />
+        {/* LT-CW: above CWR top */}
+        <SvgStatusBadge tag={findTag('WTP-LT-CW')} x={cwrX + cwrW / 2 - 30} y={cwrY - 38} scale={1.4} />
+        {/* PT 01: to the LEFT of pump-1 PT gauge (gauge has its own label "PT 01" above) */}
+        <SvgStatusBadge tag={findTag('WTP-PT1')} x={pump1X + pumpOutletOffsetX - ptGaugeR - 36} y={ptGaugeY + 8} scale={1.4} />
+        {/* PT 02: to the RIGHT of pump-2 PT gauge */}
+        <SvgStatusBadge tag={findTag('WTP-PT2')} x={pump2X + pumpOutletOffsetX + ptGaugeR + 36} y={ptGaugeY + 8} scale={1.4} />
+        {/* PT CGM (combined PT): well above the master gauge, clear of "PT CGM" label */}
+        <SvgStatusBadge tag={findTag('WTP-CombinedPT1')} x={comGaugeX + 95} y={comGaugeCenterY - 25} scale={1.5} />
+        {/* PT5: in the free zone left of CWR, between CWR and discharge header */}
+        <SvgStatusBadge tag={findTag('WTP-PT5')} x={cwrX - 60} y={cwrY + cwrH + 70} scale={1.4} />
+        {/* EFM OUT (Flow OUT): well above the EFM OUT tower */}
+        <SvgStatusBadge tag={findTag('WTP-Flow-OUT')} x={outletEfmX - 90} y={mergeY - 105} scale={1.4} />
+        {/* Three outlet analyzers: stacked vertically to the LEFT of each so they don't touch each other or labels */}
+        <SvgStatusBadge tag={findTag('WTP-PH')} x={outletAnalyzerX - 32} y={mergeY + 5} scale={1.1} />
+        <SvgStatusBadge tag={findTag('WTP-CL')} x={outletAnalyzerX + 90 - 32} y={mergeY + 5} scale={1.1} />
+        <SvgStatusBadge tag={findTag('WTP-TA')} x={outletAnalyzerX + 180 - 32} y={mergeY + 5} scale={1.1} />
+        {/* Totalizer: clearly above the "Totalizer" label */}
+        <SvgStatusBadge tag={findTag('WTP-Totalizer')} x={totalizerX - 85} y={totalizerY - 10} scale={1.4} />
+        {/* MFM Energy Meter: well above the meter's label */}
+        <SvgStatusBadge tag={findTag('WTP-KW')} x={energyMeterX - 25} y={energyMeterY - 50} scale={1.4} />
 
       </svg>
     </div>
