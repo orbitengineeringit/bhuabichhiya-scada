@@ -1292,6 +1292,21 @@ const WtpProcessSimulation: React.FC = () => {
           })}
         </g>
 
+        {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
+        <SvgStatusBadge tag={findTag('WTP-Flow-IN')} x={efmInX + 60} y={inletPipeY - 110} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-LT-BW')} x={bwTankX + bwTankW / 2} y={bwTankY - 28} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-LT-CW')} x={cwrX + cwrW / 2} y={cwrY - 24} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-PT1')} x={pump1X + pumpOutletOffsetX} y={ptGaugeY - 110} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-PT2')} x={pump2X + pumpOutletOffsetX} y={ptGaugeY - 110} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-CombinedPT1')} x={comGaugeX} y={comGaugeCenterY - 70} scale={1.5} />
+        <SvgStatusBadge tag={findTag('WTP-PT5')} x={comGaugeX + 240} y={comGaugeCenterY - 70} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-Flow-OUT')} x={outletEfmX} y={mergeY - 130} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-PH')} x={outletAnalyzerX} y={mergeY + 10} scale={1.3} />
+        <SvgStatusBadge tag={findTag('WTP-CL')} x={outletAnalyzerX + 90} y={mergeY + 10} scale={1.3} />
+        <SvgStatusBadge tag={findTag('WTP-TA')} x={outletAnalyzerX + 180} y={mergeY + 10} scale={1.3} />
+        <SvgStatusBadge tag={findTag('WTP-Totalizer')} x={totalizerX} y={totalizerY - 28} scale={1.4} />
+        <SvgStatusBadge tag={findTag('WTP-KW')} x={energyMeterX + 70} y={energyMeterY - 28} scale={1.4} />
+
       </svg>
     </div>
   );
