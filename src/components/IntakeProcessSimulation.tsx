@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useScada } from '@/contexts/ScadaContext';
-import SensorStatusStrip from './SensorStatusStrip';
+import SvgStatusBadge from './SvgStatusBadge';
 
 /**
  * Intake Well - Process Simulation View
@@ -329,10 +329,6 @@ const IntakeProcessSimulation: React.FC = () => {
 
   return (
     <div className="w-full premium-card rounded-xl p-3 md:p-5 animate-fade-in overflow-x-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
-      <SensorStatusStrip
-        tags={intakeTags}
-        sensorIds={['INT-PT1', 'INT-PT2', 'INT-LT', 'INT-Flow', 'INT-Totalizer', 'INT-Pump1', 'INT-Pump2', 'INT-KW']}
-      />
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ maxHeight: '88vh', minWidth: '650px' }}>
         <defs>
           <linearGradient id="p-pipe-h" x1="0" y1="0" x2="0" y2="1">
@@ -663,6 +659,17 @@ const IntakeProcessSimulation: React.FC = () => {
 
         {renderPump(p1x, pump1Running, 'VT 01', pt1Val, 'left')}
         {renderPump(p2x, pump2Running, 'VT 02', pt2Val, 'right')}
+
+        {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
+        <SvgStatusBadge tag={pt1Tag} x={gauge1X} y={gaugeY - gaugeR - 30} scale={1.2} />
+        <SvgStatusBadge tag={pt2Tag} x={gauge2X} y={gaugeY - gaugeR - 30} scale={1.2} />
+        <SvgStatusBadge tag={findTag('INT-CombinedPT')} x={sCx + 80} y={140 - pt03R - 22} scale={1.3} />
+        <SvgStatusBadge tag={flowTag} x={1058} y={headerY - 110} scale={1.2} />
+        <SvgStatusBadge tag={totalizerTag} x={1240} y={headerY + headerH + 4} scale={1.2} />
+        <SvgStatusBadge tag={kwTag} x={1260} y={headerY + headerH + 128} scale={1.2} />
+        <SvgStatusBadge tag={pump1Tag} x={p1x} y={motorTop - 28} scale={1.2} />
+        <SvgStatusBadge tag={pump2Tag} x={p2x} y={motorTop - 28} scale={1.2} />
+        <SvgStatusBadge tag={ltTag} x={sR + 83} y={sTop - 30} scale={1.2} />
 
         {/* RLT */}
         {(() => {

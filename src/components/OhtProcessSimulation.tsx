@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { BuaBicchiyaSensor } from '@/config/buaBicchiyaSensors';
-import SensorStatusStrip from './SensorStatusStrip';
+import SvgStatusBadge from './SvgStatusBadge';
 
 interface CircularGaugeProps {
   cx: number;
@@ -191,12 +191,6 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
 
   return (
     <div className="w-full relative overflow-hidden bg-background border border-border/50 rounded-2xl p-1 md:p-3">
-      <div className="relative z-10">
-        <SensorStatusStrip
-          tags={tags}
-          sensorIds={sensors.filter(s => !s.notInstalled).map(s => s.id)}
-        />
-      </div>
       {/* Blueprint Grid Background Pattern */}
       <div
         className="w-full h-full min-h-[350px]"
@@ -440,6 +434,13 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
             <circle cx={500} cy={pillarY + pillarH} r="6" fill="#475569" />
             <CircularGauge cx={500} cy={pillarY + pillarH - 100} r={55} value={ptVal} min={0} max={10} label="PT Inlet" unit="Bar" />
           </g>
+
+          {/* ═══ Per-sensor MQTT ON/OFF status badges ═══ */}
+          <SvgStatusBadge tag={ltTag} x={tcx} y={ty - 10} scale={1.6} />
+          <SvgStatusBadge tag={ptTag} x={500} y={pillarY + pillarH - 170} scale={1.6} />
+          <SvgStatusBadge tag={fInTag} x={300} y={pillarY + pillarH - 165} scale={1.6} />
+          <SvgStatusBadge tag={fOutTag} x={svgW - 300} y={pillarY + pillarH - 65} scale={1.6} />
+          {totTag && <SvgStatusBadge tag={totTag} x={300} y={pillarY + pillarH + 155} scale={1.6} />}
 
         </svg>
       </div>
