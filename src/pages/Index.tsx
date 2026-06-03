@@ -20,11 +20,13 @@ const Index = () => {
     );
   }
 
+  const installedTags = (tags: typeof intakeTags) => tags.filter(t => !t.notInstalled);
+
   const getDataActiveCount = (tags: typeof intakeTags) => {
-    return tags.filter(t => t.value !== 0 || (t.lastDataTime && t.lastDataTime.getTime() > 0)).length;
+    return installedTags(tags).filter(t => t.value !== 0 || (t.lastDataTime && t.lastDataTime.getTime() > 0)).length;
   };
 
-  const totalSensors = intakeTags.length + ohtTags.length + wtpTags.length;
+  const totalSensors = installedTags(intakeTags).length + installedTags(ohtTags).length + installedTags(wtpTags).length;
   const totalActive = getDataActiveCount(intakeTags) + getDataActiveCount(ohtTags) + getDataActiveCount(wtpTags);
 
   const cards = [
