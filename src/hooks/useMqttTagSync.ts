@@ -29,6 +29,43 @@ const SAVE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 const ABNORMAL_DELTA_PCT = 0.12;        // 12% of sensor range
 const FLUSH_INTERVAL_MS = 30 * 1000;    // batch-write queue to DB every 30s
 
+/**
+ * Process-engineering safety bands per instrument type.
+ * Independent of operator-configured setpoints (which may be wrong/missing).
+ * If a reading falls OUTSIDE these bands → definitely abnormal → save immediately.
+ * Returns true when the value is in the abnormal/unsafe zone.
+ */
+const isAbnormalReading = (sensor: BuaBicchiyaSensor, value: number): boolean => {
+  switch (sensor.instrumentType) {
+    case 'pt':
+    case 'combined_pt':
+      // Pressure (0-10 Bar): safe 0.3 – 80% of max. Below = pump dry-run risk, above = burst risk
+      return value < 0.3 || value > sensor.max * 0.85;
+    case 'lt':
+      // Level %: safe 8-95. Below = empty risk, above = overflow risk
+      return value < 8 || value > 95;
+    case 'flow':
+      // Flow: abnormal if > 95% of design capacity (overloading)
+      return value > sensor.max * 0.95;
+    case 'ph':
+      // pH: potable safe 6.5-8.5
+      return value < 6.5 || value > 8.5;
+    case 'chlorine':
+      // Free chlorine residual safe 0.2-1.5 mg/L
+      return value < 0.2 || value > 1.5;
+    case 'turbidity': {
+      // Raw intake turbidity tolerates higher; treated water must be < 5 NTU
+      const isRawIntake = sensor.section === 'wtp' && sensor.id.includes('TA-IN');
+      return isRawIntake ? value > 50 : value > 5;
+    }
+    case 'kw':
+      // Energy: abnormal if > 90% of max rated load
+      return value > sensor.max * 0.9;
+    default:
+      return false;
+  }
+};
+
 export const useMqttTagSync = (
   intakeTags: TagData[],
   ohtTags: TagData[],
@@ -174,7 +211,7 @@ export const useMqttTagSync = (
       // PT overflow protection
       if (sensor.instrumentType === 'pt' && value > 1e30) { displayValue = 0; shouldLog = false; }
 
-      // Alarm check for analog sensors
+      // Alarm check for analog sensors (uses operator setpoints if configured)
       if (existingTag && sensor.type === 'analog') {
         const highThreshold = existingTag.highSetpoint ?? existingTag.max;
         const lowThreshold = existingTag.lowSetpoint ?? existingTag.min;
@@ -220,9 +257,8 @@ export const useMqttTagSync = (
         const now = Date.now();
         const prev = lastSaved.current.get(key);
 
-        const highTh = existingTag?.highSetpoint ?? existingTag?.max ?? sensor.max;
-        const lowTh  = existingTag?.lowSetpoint  ?? existingTag?.min ?? sensor.min;
-        const inAlarm = displayValue > highTh || displayValue < lowTh;
+        // Use hardcoded process safety bands (operator setpoints may be wrong/missing)
+        const abnormalNow = isAbnormalReading(sensor, displayValue);
 
         const range = Math.max(1e-6, (sensor.max ?? 1) - (sensor.min ?? 0));
         const deltaPct = prev ? Math.abs(displayValue - prev.value) / range : 1;
@@ -232,8 +268,8 @@ export const useMqttTagSync = (
           reason = 'interval';
         } else if (sensor.type !== 'analog' && displayValue !== prev.value) {
           reason = 'state_change';                     // pump/valve on↔off
-        } else if (inAlarm !== prev.inAlarm) {
-          reason = 'alarm';                            // alarm enter/exit
+        } else if (abnormalNow && !prev.inAlarm) {
+          reason = 'alarm';                            // entered unsafe process zone
         } else if (deltaPct >= ABNORMAL_DELTA_PCT) {
           reason = 'abnormal';                         // sudden fluctuation
         } else if (now - prev.at >= SAVE_INTERVAL_MS) {
@@ -246,7 +282,7 @@ export const useMqttTagSync = (
             section: section as 'oht' | 'intake' | 'wtp',
             topic, reason,
           });
-          lastSaved.current.set(key, { value: displayValue, at: now, inAlarm });
+          lastSaved.current.set(key, { value: displayValue, at: now, inAlarm: abnormalNow });
         }
       }
     }
