@@ -547,7 +547,17 @@ const WtpProcessSimulation: React.FC = () => {
   const clOutVal = findTag('WTP-CL')?.value ?? 0;
   const taOutVal = findTag('WTP-TA')?.value ?? 0;
   const totVal = findTag('WTP-Totalizer')?.value ?? 0;
-  const kwVal = findTag('WTP-KW')?.value ?? 0;
+  const kwTag = findTag('WTP-KW');
+  const kwVal = kwTag?.value ?? 0;
+  const kwLive = (() => {
+    if (!kwTag) return false;
+    if (kwTag.status === 'disconnected') return false;
+    if (kwTag.lastDataTime) {
+      const elapsed = Date.now() - new Date(kwTag.lastDataTime).getTime();
+      return elapsed <= 30000;
+    }
+    return kwTag.source === 'mqtt';
+  })();
 
   const pt1Val = findTag('WTP-PT1')?.value ?? 0;
   const pt2Val = findTag('WTP-PT2')?.value ?? 0;
@@ -1253,7 +1263,18 @@ const WtpProcessSimulation: React.FC = () => {
                     </g>
                   ))}
                 </svg>
-                <text x={ex + 5} y={ey + 152} textAnchor="middle" fontSize="12" fontWeight="700" fill="hsl(var(--success))">ACTIVE</text>
+                <g transform={`translate(${ex + 5}, ${ey + 144})`}>
+                  <rect x={-28} y={0} width={56} height={16} rx={4}
+                    fill={kwLive ? 'hsl(var(--success) / 0.15)' : 'hsl(var(--destructive) / 0.15)'}
+                    stroke={kwLive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'} strokeWidth="0.8" />
+                  <circle cx={-18} cy={8} r={2.5} fill={kwLive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}>
+                    <animate attributeName="opacity" values="1;0.4;1" dur={kwLive ? '1.6s' : '0.8s'} repeatCount="indefinite" />
+                  </circle>
+                  <text x={4} y={12} textAnchor="middle" fontSize="10" fontWeight="800" letterSpacing="1"
+                    fill={kwLive ? 'hsl(var(--success))' : 'hsl(var(--destructive))'}>
+                    {kwLive ? 'ON' : 'OFF'}
+                  </text>
+                </g>
               </g>
             );
           })()}
