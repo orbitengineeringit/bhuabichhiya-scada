@@ -26,6 +26,16 @@ const IntakeProcessSimulation: React.FC = () => {
   const totalizerVal = totalizerTag?.value ?? 0;
   const kwVal = kwTag?.value ?? 0;
 
+  const kwLive = (() => {
+    if (!kwTag) return false;
+    if (kwTag.status === 'disconnected') return false;
+    if (kwTag.lastDataTime) {
+      const elapsed = Date.now() - new Date(kwTag.lastDataTime).getTime();
+      return elapsed <= 30000;
+    }
+    return kwTag.source === 'mqtt';
+  })();
+
   const pump1Running = pt1Val > 1.5;
   const pump2Running = pt2Val > 1.5;
   const anyPumpRunning = pump1Running || pump2Running;
