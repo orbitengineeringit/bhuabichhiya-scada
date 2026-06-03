@@ -685,7 +685,7 @@ const IntakeProcessSimulation: React.FC = () => {
         {renderPump(p1x, pump1Running, 'VT 01', pt1Val, 'left')}
         {renderPump(p2x, pump2Running, 'VT 02', pt2Val, 'right')}
 
-        {/* RLT */}
+        {/* LT */}
         {(() => {
           // Shifted to right side and height precisely matched to tank visually (sTop to sBot)
           const lx = sR + 60, lt = sTop, lh = sH, fillH = (levelPercent / 100) * lh;
@@ -693,7 +693,7 @@ const IntakeProcessSimulation: React.FC = () => {
 
           return (
             <g>
-              <text x={center} y={lt - 12} textAnchor="middle" fontSize="12" fontWeight="800" fill="hsl(var(--foreground))">RLT</text>
+              <text x={center} y={lt - 12} textAnchor="middle" fontSize="12" fontWeight="800" fill="hsl(var(--foreground))">LT</text>
               <rect x={lx} y={lt} width={barW} height={lh} rx={6} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="1.2" />
               <rect x={lx + 2} y={lt + lh - fillH} width={innerW} height={fillH} rx={4.5} fill="hsl(160 45% 45%)" opacity="0.85">
                 <animate attributeName="opacity" values="0.8;0.9;0.8" dur="3s" repeatCount="indefinite" />
