@@ -463,15 +463,12 @@ const IntakeProcessSimulation: React.FC = () => {
               ))}
 
               {/* 1. SOLID WATER COLUMNS (BACKGROUND FILL) */}
-              {/* Header Segment A is always empty (no water drawn) */}
-              {/* Header Segment B is filled only when at least one pump is running */}
-              {(pump1Running || pump2Running) && drawWaterColumn(headerSegBPath, headerH)}
-              {/* Header Segment C is filled only when at least one pump is running */}
-              {(pump1Running || pump2Running) && drawWaterColumn(headerSegCPath, headerH)}
-
-              {/* Active risers are filled with water */}
-              {pump1Running && drawWaterColumn(w1Path, pipeW)}
-              {pump2Running && drawWaterColumn(w2Path, pipeW)}
+              {/* Pipes always hold water — entire header & both risers stay filled */}
+              {drawWaterColumn(headerSegAPath, headerH)}
+              {drawWaterColumn(headerSegBPath, headerH)}
+              {drawWaterColumn(headerSegCPath, headerH)}
+              {drawWaterColumn(w1Path, pipeW)}
+              {drawWaterColumn(w2Path, pipeW)}
 
               {/* 2. DYNAMIC WATER FLOW ALONG CENTERLINE */}
               {pump1Running && drawWaterFlow(w1Path, true, pipeW, pt1Val)}
