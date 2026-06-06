@@ -54,7 +54,7 @@ export const INTAKE_SENSORS: BuaBicchiyaSensor[] = [
   { id: 'INT-PT1', mqttKey: 'PT_01', label: 'Pressure 1 (PT)', unit: 'Bar', min: 0, max: 10, section: 'intake', type: 'analog', instrumentType: 'pt' },
   { id: 'INT-PT2', mqttKey: 'PT_02', label: 'Pressure 2 (PT)', unit: 'Bar', min: 0, max: 10, section: 'intake', type: 'analog', instrumentType: 'pt' },
   { id: 'INT-CombinedPT', mqttKey: 'PT_03', label: 'Combined Pressure (P1+P2)', unit: 'Bar', min: 0, max: 10, section: 'intake', type: 'analog', instrumentType: 'combined_pt' },
-  { id: 'INT-LT', mqttKey: 'LEVEL', label: 'Level (LT)', unit: '%', min: 0, max: 100, section: 'intake', type: 'analog', instrumentType: 'lt' },
+  { id: 'INT-LT', mqttKey: 'LEVEL', label: 'Level (LT)', unit: 'Meter', min: 0, max: 7, section: 'intake', type: 'analog', instrumentType: 'lt' },
   { id: 'INT-Flow', mqttKey: 'FLOW', label: 'Flow Meter', unit: 'm³/hr', min: 0, max: 200, section: 'intake', type: 'analog', instrumentType: 'flow' },
   { id: 'INT-Totalizer', mqttKey: 'TOTALIZER', label: 'Totalizer', unit: 'm³', min: 0, max: 999999, section: 'intake', type: 'totalizer', instrumentType: 'totalizer' },
   { id: 'INT-KW', mqttKey: 'KW', label: 'Energy Meter', unit: 'kW', min: 0, max: 100, section: 'intake', type: 'analog', instrumentType: 'kw', notInstalled: true },
