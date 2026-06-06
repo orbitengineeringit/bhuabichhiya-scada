@@ -135,12 +135,22 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
     if (!forceShow && flow <= 0.1) return null;
     // Normalize flow: assume 100 m3/h is max speed. Map 0-100 to 0-1 range.
     const pNorm = Math.min(1, Math.max(0.1, flow / 100));
-    const flowDur = (2.0 - (pNorm * 1.6)).toFixed(2) + 's'; // 0.4s (fast) to 2.0s (slow)
+    const durFast = (2.4 - pNorm * 1.6).toFixed(2) + 's';
+    const durSlow = (3.6 - pNorm * 2.0).toFixed(2) + 's';
+    const dashA = 55, gapA = 22, cycleA = dashA + gapA;
+    const dashB = 30, gapB = 60, cycleB = dashB + gapB;
+    const sw = Math.max(3, pipeW * 0.32);
     return (
-      <path d={d} fill="none" stroke="#60a5fa" strokeWidth={Math.max(6, pipeW * 0.45)} strokeLinecap="butt" strokeLinejoin="round" strokeDasharray={`${pipeW * 0.8} ${pipeW * 1.2}`} opacity="0.7">
-        <animate attributeName="stroke-dashoffset" from="60" to="0" dur={flowDur} repeatCount="indefinite" />
-        <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2s" repeatCount="indefinite" />
-      </path>
+      <g opacity="0.95">
+        <path d={d} fill="none" stroke="#f0f9ff" strokeWidth={sw}
+          strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dashA} ${gapA}`} opacity="0.85">
+          <animate attributeName="stroke-dashoffset" from={cycleA} to="0" dur={durFast} repeatCount="indefinite" calcMode="linear" />
+        </path>
+        <path d={d} fill="none" stroke="#ffffff" strokeWidth={sw * 0.45}
+          strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dashB} ${gapB}`} opacity="0.55">
+          <animate attributeName="stroke-dashoffset" from={cycleB} to="0" dur={durSlow} repeatCount="indefinite" calcMode="linear" />
+        </path>
+      </g>
     );
   };
 

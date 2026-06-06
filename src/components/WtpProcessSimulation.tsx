@@ -690,12 +690,22 @@ const WtpProcessSimulation: React.FC = () => {
   const drawWaterFlow = (d: string, flow: number, active: boolean = true) => {
     if (!active || flow <= 0.05) return null;
     const pNorm = Math.min(1, Math.max(0.1, flow / 100));
-    const dur = (2.0 - pNorm * 1.5).toFixed(2) + 's';
+    const durFast = (2.4 - pNorm * 1.6).toFixed(2) + 's';
+    const durSlow = (3.6 - pNorm * 2.0).toFixed(2) + 's';
+    const dashA = 55, gapA = 22, cycleA = dashA + gapA;
+    const dashB = 30, gapB = 60, cycleB = dashB + gapB;
+    const sw = Math.max(3, pipeW * 0.32);
     return (
-      <path d={d} fill="none" stroke="#93c5fd" strokeWidth={Math.max(5, pipeW * 0.35)}
-        strokeLinecap="butt" strokeLinejoin="round" strokeDasharray={`${pipeW * 0.7} ${pipeW * 0.9}`} opacity="0.8">
-        <animate attributeName="stroke-dashoffset" from="50" to="0" dur={dur} repeatCount="indefinite" />
-      </path>
+      <g opacity="0.95">
+        <path d={d} fill="none" stroke="#f0f9ff" strokeWidth={sw}
+          strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dashA} ${gapA}`} opacity="0.85">
+          <animate attributeName="stroke-dashoffset" from={cycleA} to="0" dur={durFast} repeatCount="indefinite" calcMode="linear" />
+        </path>
+        <path d={d} fill="none" stroke="#ffffff" strokeWidth={sw * 0.45}
+          strokeLinecap="round" strokeLinejoin="round" strokeDasharray={`${dashB} ${gapB}`} opacity="0.55">
+          <animate attributeName="stroke-dashoffset" from={cycleB} to="0" dur={durSlow} repeatCount="indefinite" calcMode="linear" />
+        </path>
+      </g>
     );
   };
 
