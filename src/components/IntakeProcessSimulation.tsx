@@ -466,8 +466,9 @@ const IntakeProcessSimulation: React.FC = () => {
 
           // Water trace paths — origin deep inside pump, up the riser, then SMOOTH BEND into the header rightward
           const headerCenterY = headerY + headerH / 2;
-          const w1Path = `M ${p1x} ${sTop + 70} L ${p1x} ${dischCenterY + pRd} Q ${p1x} ${dischCenterY} ${p1x + pRd} ${dischCenterY} L ${riser1X - pRd} ${dischCenterY} Q ${riser1X} ${dischCenterY} ${riser1X} ${dischCenterY - pRd} L ${riser1X} ${headerCenterY + pRd} Q ${riser1X} ${headerCenterY} ${riser1X + pRd} ${headerCenterY}`;
-          const w2Path = `M ${p2x} ${sTop + 70} L ${p2x} ${dischCenterY + pRd} Q ${p2x} ${dischCenterY} ${p2x + pRd} ${dischCenterY} L ${riser2X - pRd} ${dischCenterY} Q ${riser2X} ${dischCenterY} ${riser2X} ${dischCenterY - pRd} L ${riser2X} ${headerCenterY + pRd} Q ${riser2X} ${headerCenterY} ${riser2X + pRd} ${headerCenterY}`;
+          // Full continuous flow path: pump → up riser → smooth bend into header → all the way to WTP outlet
+          const w1Path = `M ${p1x} ${sTop + 70} L ${p1x} ${dischCenterY + pRd} Q ${p1x} ${dischCenterY} ${p1x + pRd} ${dischCenterY} L ${riser1X - pRd} ${dischCenterY} Q ${riser1X} ${dischCenterY} ${riser1X} ${dischCenterY - pRd} L ${riser1X} ${headerCenterY + pRd} Q ${riser1X} ${headerCenterY} ${riser1X + pRd} ${headerCenterY} L ${sR + 164} ${headerCenterY}`;
+          const w2Path = `M ${p2x} ${sTop + 70} L ${p2x} ${dischCenterY + pRd} Q ${p2x} ${dischCenterY} ${p2x + pRd} ${dischCenterY} L ${riser2X - pRd} ${dischCenterY} Q ${riser2X} ${dischCenterY} ${riser2X} ${dischCenterY - pRd} L ${riser2X} ${headerCenterY + pRd} Q ${riser2X} ${headerCenterY} ${riser2X + pRd} ${headerCenterY} L ${sR + 164} ${headerCenterY}`;
 
           return (
             <g>
@@ -496,13 +497,6 @@ const IntakeProcessSimulation: React.FC = () => {
               {/* 2. DYNAMIC WATER FLOW ALONG CENTERLINE */}
               {pump1Running && drawWaterFlow(w1Path, true, pipeW, pt1Val)}
               {pump2Running && drawWaterFlow(w2Path, true, pipeW, pt2Val)}
-              
-              {/* Segment B flows only when Pump 1 is running */}
-              {pump1Running && drawWaterFlow(headerSegBPath, true, headerH, pt1Val)}
-              
-              {/* Segment C flows when Pump 1 or Pump 2 is running */}
-              {pump1Running && drawWaterFlow(headerSegCPath, true, headerH, pt1Val)}
-              {!pump1Running && pump2Running && drawWaterFlow(headerSegCPath, true, headerH, pt2Val)}
 
               {/* Final cap on the right end */}
               <ellipse cx={sR + 164} cy={headerY + headerH / 2} rx={headerH / 2} ry={headerH / 2 + 2} fill={pVDark} opacity={0.6} />
