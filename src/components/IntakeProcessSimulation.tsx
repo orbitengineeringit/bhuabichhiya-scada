@@ -696,7 +696,7 @@ const IntakeProcessSimulation: React.FC = () => {
             <g>
               <text x={center} y={lt - 12} textAnchor="middle" fontSize="12" fontWeight="800" fill="hsl(var(--foreground))">LT</text>
               <rect x={lx} y={lt} width={barW} height={lh} rx={6} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth="1.2" />
-              <rect x={lx + 2} y={lt + lh - fillH} width={innerW} height={fillH} rx={4.5} fill="hsl(160 45% 45%)" opacity="0.85">
+              <rect x={lx + 2} y={lt + lh - fillH} width={innerW} height={fillH} rx={4.5} fill="hsl(200 70% 82%)" opacity="0.85">
                 <animate attributeName="opacity" values="0.8;0.9;0.8" dur="3s" repeatCount="indefinite" />
               </rect>
               {[0, 25, 50, 75, 100].map(p => {
