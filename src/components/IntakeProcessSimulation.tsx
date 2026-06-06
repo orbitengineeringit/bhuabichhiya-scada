@@ -410,29 +410,42 @@ const IntakeProcessSimulation: React.FC = () => {
 
             // Map pressure to animation speed linearly
             const pNorm = Math.min(10, Math.max(1, pressure)) / 10;
-            const durSec = 3.0 - pNorm * 1.8; // 1.2s (fast) → 3.0s (slow)
-            const flowDur = durSec.toFixed(2) + 's';
-            const r = Math.max(2.5, w * 0.18);
-            const uid = Math.abs(d.split('').reduce((a, c) => a + c.charCodeAt(0), 0)).toString(36) + Math.round(w);
-            // 6 wave crests, each phase-shifted via negative begin → continuous flowing stream
-            const N = 6;
+            const durFast = (2.4 - pNorm * 1.6).toFixed(2) + 's';   // top highlight streaks
+            const durSlow = (3.6 - pNorm * 2.0).toFixed(2) + 's';   // deeper ripple streaks
+
+            // Long flowing streaks (looks like moving water, not dots)
+            const dashA = 55, gapA = 22, cycleA = dashA + gapA;
+            const dashB = 30, gapB = 60, cycleB = dashB + gapB;
+            const sw = Math.max(3, w * 0.32);
 
             return (
               <g opacity="0.95">
-                <path id={`flow-${uid}`} d={d} fill="none" stroke="none" />
-                {Array.from({ length: N }, (_, i) => (
-                  <circle key={i} r={r} fill="#f0f9ff" opacity={0.9}>
-                    <animateMotion
-                      dur={flowDur}
-                      repeatCount="indefinite"
-                      begin={`-${((i / N) * durSec).toFixed(3)}s`}
-                      calcMode="linear"
-                      rotate="auto"
-                    >
-                      <mpath href={`#flow-${uid}`} />
-                    </animateMotion>
-                  </circle>
-                ))}
+                {/* Primary flowing highlight streaks */}
+                <path
+                  d={d}
+                  fill="none"
+                  stroke="#f0f9ff"
+                  strokeWidth={sw}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={`${dashA} ${gapA}`}
+                  opacity="0.85"
+                >
+                  <animate attributeName="stroke-dashoffset" from={cycleA} to="0" dur={durFast} repeatCount="indefinite" calcMode="linear" />
+                </path>
+                {/* Secondary slower ripple for depth */}
+                <path
+                  d={d}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth={sw * 0.45}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={`${dashB} ${gapB}`}
+                  opacity="0.55"
+                >
+                  <animate attributeName="stroke-dashoffset" from={cycleB} to="0" dur={durSlow} repeatCount="indefinite" calcMode="linear" />
+                </path>
               </g>
             );
           };
