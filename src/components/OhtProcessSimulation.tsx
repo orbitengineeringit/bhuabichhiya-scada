@@ -110,9 +110,9 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
   const ltTag = getTag('LEVEL');
   const ltVal = ltTag?.value || 0;
 
-  const ptTag = getTag('PT');
+  const ptTag = getTag('PT_01');
 
-  const fInTag = getTag('FLOW_IN');
+  const fInTag = getTag('FLOW');
 
   const fOutTag = getTag('FLOW_OUT');
 
