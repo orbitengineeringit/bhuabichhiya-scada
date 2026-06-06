@@ -358,8 +358,8 @@ const IntakeProcessSimulation: React.FC = () => {
             <stop offset="100%" stopColor={pDark} />
           </linearGradient>
           <linearGradient id="p-water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="hsl(160 45% 45%)" stopOpacity="1" />
-            <stop offset="100%" stopColor="hsl(160 45% 45%)" stopOpacity="1" />
+            <stop offset="0%" stopColor="hsl(200 70% 88%)" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="hsl(200 60% 75%)" stopOpacity="0.9" />
           </linearGradient>
           <linearGradient id="p-ground" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#cbd5e1" />
