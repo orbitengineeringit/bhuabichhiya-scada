@@ -412,6 +412,10 @@ const IntakeProcessSimulation: React.FC = () => {
             const pNorm = Math.min(10, Math.max(1, pressure)) / 10;
             const flowDur = (1.5 - (pNorm * 1.1)).toFixed(2) + 's'; // 0.4s (fast) to 1.5s (slow)
 
+            const dash = w * 0.6;
+            const gap = w * 0.7;
+            const cycle = dash + gap;
+
             return (
               <path
                 d={d}
@@ -420,10 +424,10 @@ const IntakeProcessSimulation: React.FC = () => {
                 strokeWidth={Math.max(4, w * 0.35)}
                 strokeLinecap="butt"
                 strokeLinejoin="round"
-                strokeDasharray={`${w * 0.6} ${w * 0.7}`}
+                strokeDasharray={`${dash} ${gap}`}
                 opacity="0.9"
               >
-                <animate attributeName="stroke-dashoffset" from="40" to="0" dur={flowDur} repeatCount="indefinite" />
+                <animate attributeName="stroke-dashoffset" from={cycle} to="0" dur={flowDur} repeatCount="indefinite" calcMode="linear" />
               </path>
             );
           };
