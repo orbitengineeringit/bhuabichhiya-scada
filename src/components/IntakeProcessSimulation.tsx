@@ -410,25 +410,35 @@ const IntakeProcessSimulation: React.FC = () => {
 
             // Map pressure to animation speed linearly
             const pNorm = Math.min(10, Math.max(1, pressure)) / 10;
-            const flowDur = (1.5 - (pNorm * 1.1)).toFixed(2) + 's'; // 0.4s (fast) to 1.5s (slow)
-
-            const dash = w * 0.6;
-            const gap = w * 0.7;
-            const cycle = dash + gap;
+            const flowDur = (3.0 - pNorm * 1.8).toFixed(2) + 's'; // 1.2s (fast) → 3.0s (slow)
+            const r = Math.max(2.5, w * 0.18);
+            const uid = d.length.toString(36) + Math.round(w).toString();
+            // 5 wave crests evenly offset, traveling continuously along the path
+            const crests = [0, 0.2, 0.4, 0.6, 0.8];
 
             return (
-              <path
-                d={d}
-                fill="none"
-                stroke="#e0f2fe"
-                strokeWidth={Math.max(4, w * 0.35)}
-                strokeLinecap="butt"
-                strokeLinejoin="round"
-                strokeDasharray={`${dash} ${gap}`}
-                opacity="0.9"
-              >
-                <animate attributeName="stroke-dashoffset" from={cycle} to="0" dur={flowDur} repeatCount="indefinite" calcMode="linear" />
-              </path>
+              <g opacity="0.95">
+                <path id={`flow-${uid}`} d={d} fill="none" stroke="none" />
+                {crests.map((offset, i) => (
+                  <circle
+                    key={i}
+                    r={r}
+                    fill="#f0f9ff"
+                    opacity={0.85}
+                  >
+                    <animateMotion
+                      dur={flowDur}
+                      repeatCount="indefinite"
+                      keyPoints={`${offset};${1 + offset}`}
+                      keyTimes="0;1"
+                      calcMode="linear"
+                      rotate="auto"
+                    >
+                      <mpath href={`#flow-${uid}`} />
+                    </animateMotion>
+                  </circle>
+                ))}
+              </g>
             );
           };
 
