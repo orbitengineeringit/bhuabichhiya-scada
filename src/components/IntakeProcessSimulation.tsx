@@ -671,7 +671,7 @@ const IntakeProcessSimulation: React.FC = () => {
         <g clipPath="url(#p-sump-clip)">
           <rect x={sL + 16} y={wY} width={sW - 32} height={sH} fill="url(#p-water)" />
           {/* Animated Water Surface Waves */}
-          <path fill="hsl(160 50% 55%)" fillOpacity="0.4">
+          <path fill="hsl(200 80% 95%)" fillOpacity="0.5">
             <animate attributeName="d" values={`M ${sL + 16} ${wY} Q ${sCx - 70} ${wY - 6} ${sCx} ${wY} Q ${sCx + 70} ${wY + 6} ${sR - 16} ${wY} V ${wY + 10} H ${sL + 16} Z;M ${sL + 16} ${wY} Q ${sCx - 70} ${wY + 6} ${sCx} ${wY} Q ${sCx + 70} ${wY - 6} ${sR - 16} ${wY} V ${wY + 10} H ${sL + 16} Z;M ${sL + 16} ${wY} Q ${sCx - 70} ${wY - 6} ${sCx} ${wY} Q ${sCx + 70} ${wY + 6} ${sR - 16} ${wY} V ${wY + 10} H ${sL + 16} Z`} dur="3s" repeatCount="indefinite" />
           </path>
         </g>
