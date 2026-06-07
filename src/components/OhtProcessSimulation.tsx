@@ -404,7 +404,7 @@ const OhtProcessSimulation: React.FC<OhtProcessSimulationProps> = ({ sensors, ta
             </text>
 
             {/* OHT name watermark — moved up */}
-            <text x={tcx} y={ty + th / 2 + 10} textAnchor="middle" fontSize="42" fontWeight="900" fill="#0f172a" opacity="0.15">{config.title}</text>
+            <text x={tcx} y={ty + th / 2 + 10} textAnchor="middle" fontSize="42" fontWeight="900" fill="#0f172a" opacity="0.15">{config.title.split(' - ')[0]}</text>
           </g>
 
           {/* INSTRUMENTS */}
