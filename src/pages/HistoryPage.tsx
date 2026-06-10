@@ -637,9 +637,9 @@ const HistoryPage: React.FC = () => {
               </div>
             ) : (
               <>
-                <div className="rounded-xl border border-border/40 overflow-hidden shadow-inner bg-card/30">
-                  <div className="max-h-[600px] overflow-auto">
-                    <Table className="min-w-[760px]">
+                <div className="rounded-xl border border-border/40 shadow-inner bg-card/30 max-h-[600px] overflow-auto" style={{ WebkitOverflowScrolling: 'touch' }}>
+                  <div className="min-w-[760px]">
+                    <Table className="min-w-[760px] w-[760px]">
                       <TableHeader className="sticky top-0 bg-secondary/80 backdrop-blur-md border-b border-border/50 z-10">
                         <TableRow className="hover:bg-transparent border-0">
                           <TableHead className="text-xs uppercase tracking-wider text-muted-foreground font-bold py-4 pl-6 border-0">Timestamp</TableHead>
