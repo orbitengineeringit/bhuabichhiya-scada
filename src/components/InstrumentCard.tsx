@@ -45,15 +45,12 @@ const InstrumentCard: React.FC<InstrumentCardProps> = memo(({ tag, sensor, secti
 
   // Derive connection status: binary ON (data flowing) or OFF (no data).
   // No "waiting/standby" state — MQTT either delivers or it doesn't.
-  const connectionStatus = useMemo<'connected' | 'no-data'>(() => {
-    if (tag.status === 'disconnected') return 'no-data';
-    if (tag.lastDataTime) {
-      const elapsed = Date.now() - new Date(tag.lastDataTime).getTime();
-      return elapsed > 30000 ? 'no-data' : 'connected';
-    }
-    if (tag.source === 'mqtt') return 'connected';
-    return 'no-data';
-  }, [tag.status, tag.lastDataTime, tag.source, tag.value]);
+  // Instant ON/OFF: derived purely from upstream tag.status. Zero values are
+  // still "connected" (the value 0 is shown, not hidden as offline).
+  const connectionStatus = useMemo<'connected' | 'no-data'>(
+    () => (tag.status === 'disconnected' ? 'no-data' : 'connected'),
+    [tag.status]
+  );
 
   const handleAlarmSave = useCallback((settings: AlarmSettings) => {
     updateTagAlarmSettings(section, tag.id, settings);

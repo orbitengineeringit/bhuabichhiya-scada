@@ -19,7 +19,10 @@ interface TagUpdate {
   reason?: 'interval' | 'abnormal' | 'alarm' | 'state_change';
 }
 
-const DISCONNECT_TIMEOUT_MS = 10000;
+// Instant ON/OFF: flip to disconnected as soon as MQTT stops delivering.
+// Typical SCADA publish cadence is 1-2s, so a 3s grace avoids false-OFF
+// while keeping the visible flip near-instant.
+const DISCONNECT_TIMEOUT_MS = 3000;
 // Historian persistence policy:
 //  - Normal data: save every 5 minutes per tag (keeps DB small)
 //  - Abnormal fluctuation: save immediately if value changes > ABNORMAL_DELTA_PCT of range since last save
@@ -101,7 +104,7 @@ export const useMqttTagSync = (
       checkTags(setIntakeTags);
       checkTags(setOhtTags);
       checkTags(setWtpTags);
-    }, 5000);
+    }, 1000);
     return () => { if (disconnectCheckInterval.current) clearInterval(disconnectCheckInterval.current); };
   }, [addAlarm, setIntakeTags, setOhtTags, setWtpTags]);
 

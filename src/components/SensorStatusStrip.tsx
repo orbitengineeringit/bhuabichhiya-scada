@@ -10,12 +10,9 @@ interface SensorStatusStripProps {
 
 const isLive = (tag?: TagData): boolean => {
   if (!tag) return false;
-  if (tag.status === 'disconnected') return false;
-  if (tag.lastDataTime) {
-    const elapsed = Date.now() - new Date(tag.lastDataTime).getTime();
-    return elapsed <= 30000;
-  }
-  return tag.source === 'mqtt';
+  // Instant ON/OFF: rely solely on upstream tag.status, which useMqttTagSync
+  // flips within ~1s of MQTT going silent. Zero values are still "live".
+  return tag.status !== 'disconnected';
 };
 
 /**

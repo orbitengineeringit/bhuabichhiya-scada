@@ -25,42 +25,27 @@ const getIconForTag = (label: string) => {
   return Activity;
 };
 
-type ConnectionStatus = 'connected' | 'standby' | 'no-data';
-const STANDBY_TIMEOUT = 10000;
-const NO_DATA_TIMEOUT = 30000;
+type ConnectionStatus = 'connected' | 'no-data';
 
 const ScadaCard = forwardRef<HTMLDivElement, ScadaCardProps>(({ tag, section, index }, ref) => {
   const { configMode, updateTagAlarmSettings } = useScada();
   const [isFlickering, setIsFlickering] = useState(false);
   const [showAlarmSettings, setShowAlarmSettings] = useState(false);
   const [showTrends, setShowTrends] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
   const prevValue = useRef(tag.value);
-  const lastDataTimeRef = useRef<Date>(new Date());
 
   useEffect(() => {
     if (prevValue.current !== tag.value) {
       setIsFlickering(true);
-      lastDataTimeRef.current = new Date();
-      setConnectionStatus('connected');
       const timer = setTimeout(() => setIsFlickering(false), 100);
       prevValue.current = tag.value;
       return () => clearTimeout(timer);
     }
   }, [tag.value]);
 
-  useEffect(() => {
-    if (!tag.isActive) return;
-    const checkConnectionStatus = () => {
-      const now = new Date();
-      const timeSinceLastData = now.getTime() - lastDataTimeRef.current.getTime();
-      if (timeSinceLastData >= NO_DATA_TIMEOUT) setConnectionStatus('no-data');
-      else if (timeSinceLastData >= STANDBY_TIMEOUT) setConnectionStatus('standby');
-      else setConnectionStatus('connected');
-    };
-    const interval = setInterval(checkConnectionStatus, 1000);
-    return () => clearInterval(interval);
-  }, [tag.isActive]);
+  // Instant ON/OFF: derive purely from upstream tag.status. Zero values stay "connected".
+  const connectionStatus: ConnectionStatus =
+    tag.status === 'disconnected' ? 'no-data' : 'connected';
 
   const handleAlarmSettingsSave = (settings: AlarmSettings) => {
     updateTagAlarmSettings(section, tag.id, settings);
@@ -90,12 +75,6 @@ const ScadaCard = forwardRef<HTMLDivElement, ScadaCardProps>(({ tag, section, in
             <Wifi className="w-3 h-3 text-success" />
           </span>
         );
-      case 'standby':
-        return (
-          <span className="status-indicator bg-warning/10 text-warning">
-            <WifiOff className="w-3 h-3" />
-          </span>
-        );
       case 'no-data':
         return (
           <span className="status-indicator bg-destructive/10 text-destructive animate-pulse">
@@ -116,7 +95,6 @@ const ScadaCard = forwardRef<HTMLDivElement, ScadaCardProps>(({ tag, section, in
           ${configMode ? 'config-active' : ''}
           ${!tag.isActive ? 'opacity-60' : ''}
           ${connectionStatus === 'no-data' ? 'border-destructive/40' : ''}
-          ${connectionStatus === 'standby' ? 'border-warning/40' : ''}
         `}
         style={{ animationDelay: `${index * 50}ms` }}
         onClick={() => tag.isActive && setShowTrends(true)}

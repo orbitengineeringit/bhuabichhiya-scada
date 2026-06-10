@@ -551,12 +551,7 @@ const WtpProcessSimulation: React.FC = () => {
   const kwVal = kwTag?.value ?? 0;
   const kwLive = (() => {
     if (!kwTag) return false;
-    if (kwTag.status === 'disconnected') return false;
-    if (kwTag.lastDataTime) {
-      const elapsed = Date.now() - new Date(kwTag.lastDataTime).getTime();
-      return elapsed <= 30000;
-    }
-    return kwTag.source === 'mqtt';
+    return kwTag.status !== 'disconnected';
   })();
 
   const pt1Val = findTag('WTP-PT1')?.value ?? 0;
