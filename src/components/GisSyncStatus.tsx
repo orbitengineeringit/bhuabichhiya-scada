@@ -163,24 +163,24 @@ const GisSyncStatus = () => {
           <span className="uppercase tracking-wider hidden sm:inline">GIS</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="max-w-6xl w-[calc(100vw-1rem)] sm:w-[calc(100vw-2rem)] max-h-[92vh] overflow-y-auto p-0 gap-0">
         {/* Header */}
-        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 via-transparent to-primary/5">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20">
-                <CloudUpload className="h-5 w-5 text-primary" />
+        <DialogHeader className="px-4 sm:px-6 pt-5 sm:pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 via-transparent to-primary/5">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
+            <div className="flex items-start gap-2.5 sm:gap-3 min-w-0 pr-6 sm:pr-0">
+              <div className="p-2 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
+                <CloudUpload className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <DialogTitle className="text-lg font-bold tracking-tight">
+              <div className="min-w-0">
+                <DialogTitle className="text-sm sm:text-lg font-bold tracking-tight leading-tight text-left">
                   MPGARUD GIS Lab API · Telemetry Sync Details
                 </DialogTitle>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 text-left">
                   Real-time integration data pipeline for Directorate of Urban Administration & Development, Bhopal.
                 </p>
               </div>
             </div>
-            <div className="hidden sm:flex flex-col items-end gap-1 text-[11px] mr-8">
+            <div className="flex sm:flex-col items-center sm:items-end gap-2 sm:gap-1 text-[10px] sm:text-[11px] sm:mr-8 flex-wrap">
               <div className="flex items-center gap-2">
                 <span className="text-muted-foreground">Vendor Key:</span>
                 <span className="font-mono font-bold tracking-wider">{VENDOR_KEY}</span>
@@ -193,9 +193,9 @@ const GisSyncStatus = () => {
           </div>
         </DialogHeader>
 
-        <div className="p-6 space-y-5">
+        <div className="p-3 sm:p-6 space-y-4 sm:space-y-5">
           {/* Top stat row */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
             <StatCard
               label="GATEWAY CONNECTION"
               icon={<Wifi className="h-4 w-4" />}
@@ -249,9 +249,9 @@ const GisSyncStatus = () => {
 
           {/* Telemetry Sync Board */}
           <div>
-            <div className="flex items-baseline gap-2 mb-2">
+            <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 mb-2">
               <h3 className="text-xs font-bold tracking-wider text-foreground">TELEMETRY SYNC BOARD</h3>
-              <span className="text-[11px] text-muted-foreground">(scroll horizontally to view all 5 stations)</span>
+              <span className="text-[10px] sm:text-[11px] text-muted-foreground">(swipe / scroll horizontally to view all 5 stations)</span>
             </div>
             <div className="overflow-x-auto pb-2 -mx-1 px-1">
               <div className="flex gap-3 min-w-min">
@@ -308,7 +308,7 @@ const GisSyncStatus = () => {
                 <div className="text-xs text-muted-foreground p-4 text-center">No sync logs yet.</div>
               )}
               {logs.map(log => (
-                <div key={log.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-xs hover:bg-muted/30 transition">
+                <div key={log.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2.5 text-xs hover:bg-muted/30 transition">
                   <div className="flex items-center gap-2 min-w-0">
                     {log.success
                       ? <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
@@ -317,12 +317,12 @@ const GisSyncStatus = () => {
                       <div className="font-semibold truncate">
                         {log.success ? 'Transmission Successful' : 'Transmission Failed'}
                       </div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
+                      <div className="font-mono text-[10px] text-muted-foreground truncate">
                         {new Date(log.triggered_at).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false })} IST · {log.duration_ms ?? '?'}ms
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 ml-6 sm:ml-0">
                     <Badge variant="outline" className={`text-[10px] font-mono font-bold ${log.success ? 'text-success border-success/40 bg-success/10' : 'text-destructive border-destructive/40 bg-destructive/10'}`}>
                       HTTP {log.response_status ?? 'ERR'}
                     </Badge>
@@ -367,7 +367,7 @@ const StationCard = ({ label, deviceId, success, unknown: unknownProp, status, d
   const [showJson, setShowJson] = useState(false);
   const [showResp, setShowResp] = useState(false);
   return (
-    <div className="w-[300px] shrink-0 rounded-xl border bg-card overflow-hidden flex flex-col">
+    <div className="w-[260px] sm:w-[300px] shrink-0 rounded-xl border bg-card overflow-hidden flex flex-col">
       <div className="px-3 py-2 border-b flex items-center justify-between bg-muted/30">
         <div className="min-w-0">
           <div className="text-[11px] font-bold tracking-wide truncate">{label}</div>
