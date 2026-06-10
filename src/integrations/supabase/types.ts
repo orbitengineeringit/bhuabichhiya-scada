@@ -207,6 +207,90 @@ export type Database = {
         }
         Relationships: []
       }
+      gis_config: {
+        Row: {
+          api_token: string
+          auto_sync_enabled: boolean
+          base_url: string
+          created_at: string
+          id: string
+          intake_device_id: string
+          oht1_device_id: string
+          oht2_device_id: string
+          oht3_device_id: string
+          sync_interval_seconds: number
+          updated_at: string
+          vendor_key: string
+          wtp_device_id: string
+        }
+        Insert: {
+          api_token?: string
+          auto_sync_enabled?: boolean
+          base_url?: string
+          created_at?: string
+          id?: string
+          intake_device_id?: string
+          oht1_device_id?: string
+          oht2_device_id?: string
+          oht3_device_id?: string
+          sync_interval_seconds?: number
+          updated_at?: string
+          vendor_key?: string
+          wtp_device_id?: string
+        }
+        Update: {
+          api_token?: string
+          auto_sync_enabled?: boolean
+          base_url?: string
+          created_at?: string
+          id?: string
+          intake_device_id?: string
+          oht1_device_id?: string
+          oht2_device_id?: string
+          oht3_device_id?: string
+          sync_interval_seconds?: number
+          updated_at?: string
+          vendor_key?: string
+          wtp_device_id?: string
+        }
+        Relationships: []
+      }
+      gis_sync_logs: {
+        Row: {
+          duration_ms: number | null
+          endpoint: string
+          error_message: string | null
+          id: string
+          request_payload: Json | null
+          response_body: string | null
+          response_status: number | null
+          success: boolean
+          triggered_at: string
+        }
+        Insert: {
+          duration_ms?: number | null
+          endpoint: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          success?: boolean
+          triggered_at?: string
+        }
+        Update: {
+          duration_ms?: number | null
+          endpoint?: string
+          error_message?: string | null
+          id?: string
+          request_payload?: Json | null
+          response_body?: string | null
+          response_status?: number | null
+          success?: boolean
+          triggered_at?: string
+        }
+        Relationships: []
+      }
       historian_aggregates: {
         Row: {
           avg_value: number | null
