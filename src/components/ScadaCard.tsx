@@ -26,41 +26,26 @@ const getIconForTag = (label: string) => {
 };
 
 type ConnectionStatus = 'connected' | 'standby' | 'no-data';
-const STANDBY_TIMEOUT = 10000;
-const NO_DATA_TIMEOUT = 30000;
 
 const ScadaCard = forwardRef<HTMLDivElement, ScadaCardProps>(({ tag, section, index }, ref) => {
   const { configMode, updateTagAlarmSettings } = useScada();
   const [isFlickering, setIsFlickering] = useState(false);
   const [showAlarmSettings, setShowAlarmSettings] = useState(false);
   const [showTrends, setShowTrends] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
   const prevValue = useRef(tag.value);
-  const lastDataTimeRef = useRef<Date>(new Date());
 
   useEffect(() => {
     if (prevValue.current !== tag.value) {
       setIsFlickering(true);
-      lastDataTimeRef.current = new Date();
-      setConnectionStatus('connected');
       const timer = setTimeout(() => setIsFlickering(false), 100);
       prevValue.current = tag.value;
       return () => clearTimeout(timer);
     }
   }, [tag.value]);
 
-  useEffect(() => {
-    if (!tag.isActive) return;
-    const checkConnectionStatus = () => {
-      const now = new Date();
-      const timeSinceLastData = now.getTime() - lastDataTimeRef.current.getTime();
-      if (timeSinceLastData >= NO_DATA_TIMEOUT) setConnectionStatus('no-data');
-      else if (timeSinceLastData >= STANDBY_TIMEOUT) setConnectionStatus('standby');
-      else setConnectionStatus('connected');
-    };
-    const interval = setInterval(checkConnectionStatus, 1000);
-    return () => clearInterval(interval);
-  }, [tag.isActive]);
+  // Instant ON/OFF: derive purely from upstream tag.status. Zero values stay "connected".
+  const connectionStatus: ConnectionStatus =
+    tag.status === 'disconnected' ? 'no-data' : 'connected';
 
   const handleAlarmSettingsSave = (settings: AlarmSettings) => {
     updateTagAlarmSettings(section, tag.id, settings);

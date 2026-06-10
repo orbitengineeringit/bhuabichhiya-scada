@@ -28,48 +28,27 @@ const getIconForSensor = (id: string) => {
 // Connection status types
 type ConnectionStatus = 'connected' | 'standby' | 'no-data';
 
-const STANDBY_TIMEOUT = 10000;
-const NO_DATA_TIMEOUT = 30000;
-
 const OhtSensorCard: React.FC<OhtSensorCardProps> = ({ tag, index }) => {
   const { updateTagAlarmSettings } = useScada();
   const [isFlickering, setIsFlickering] = useState(false);
   const [showAlarmSettings, setShowAlarmSettings] = useState(false);
   const [showTrends, setShowTrends] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
   const prevValue = useRef(tag.value);
-  const lastDataTimeRef = useRef<Date>(new Date());
 
   // Track value changes for flickering effect
   useEffect(() => {
     if (prevValue.current !== tag.value) {
       setIsFlickering(true);
-      lastDataTimeRef.current = new Date();
-      setConnectionStatus('connected');
       const timer = setTimeout(() => setIsFlickering(false), 100);
       prevValue.current = tag.value;
       return () => clearTimeout(timer);
     }
   }, [tag.value]);
 
-  // Connection status monitoring
-  useEffect(() => {
-    const checkConnectionStatus = () => {
-      const now = new Date();
-      const timeSinceLastData = now.getTime() - lastDataTimeRef.current.getTime();
-
-      if (timeSinceLastData >= NO_DATA_TIMEOUT) {
-        setConnectionStatus('no-data');
-      } else if (timeSinceLastData >= STANDBY_TIMEOUT) {
-        setConnectionStatus('standby');
-      } else {
-        setConnectionStatus('connected');
-      }
-    };
-
-    const interval = setInterval(checkConnectionStatus, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // Instant ON/OFF: derive purely from upstream tag.status, which useMqttTagSync
+  // flips within ~1s of MQTT going silent. Zero values stay "connected".
+  const connectionStatus: ConnectionStatus =
+    tag.status === 'disconnected' ? 'no-data' : 'connected';
 
   const handleAlarmSettingsSave = (settings: AlarmSettings) => {
     updateTagAlarmSettings('oht', tag.id, settings);

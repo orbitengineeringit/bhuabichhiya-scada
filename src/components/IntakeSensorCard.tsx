@@ -28,49 +28,27 @@ const getIconForSensor = (id: string) => {
 // Connection status types
 type ConnectionStatus = 'connected' | 'standby' | 'no-data';
 
-const STANDBY_TIMEOUT = 10000;
-const NO_DATA_TIMEOUT = 30000;
-const DISCONNECT_TIMEOUT = 10000; // 10 seconds - same as useMqttTagSync
-
 const IntakeSensorCard: React.FC<IntakeSensorCardProps> = ({ tag, index }) => {
   const { updateTagAlarmSettings } = useScada();
   const [isFlickering, setIsFlickering] = useState(false);
   const [showAlarmSettings, setShowAlarmSettings] = useState(false);
   const [showTrends, setShowTrends] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connected');
   const prevValue = useRef(tag.value);
-  const lastDataTimeRef = useRef<Date>(new Date());
 
   // Track value changes for flickering effect
   useEffect(() => {
     if (prevValue.current !== tag.value) {
       setIsFlickering(true);
-      lastDataTimeRef.current = new Date();
-      setConnectionStatus('connected');
       const timer = setTimeout(() => setIsFlickering(false), 100);
       prevValue.current = tag.value;
       return () => clearTimeout(timer);
     }
   }, [tag.value]);
 
-  // Connection status monitoring
-  useEffect(() => {
-    const checkConnectionStatus = () => {
-      const now = new Date();
-      const timeSinceLastData = now.getTime() - lastDataTimeRef.current.getTime();
-
-      if (timeSinceLastData >= NO_DATA_TIMEOUT) {
-        setConnectionStatus('no-data');
-      } else if (timeSinceLastData >= STANDBY_TIMEOUT) {
-        setConnectionStatus('standby');
-      } else {
-        setConnectionStatus('connected');
-      }
-    };
-
-    const interval = setInterval(checkConnectionStatus, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // Instant ON/OFF: derive purely from upstream tag.status, which useMqttTagSync
+  // flips within ~1s of MQTT going silent. Zero values stay "connected".
+  const connectionStatus: ConnectionStatus =
+    tag.status === 'disconnected' ? 'no-data' : 'connected';
 
   const handleAlarmSettingsSave = (settings: AlarmSettings) => {
     updateTagAlarmSettings('intake', tag.id, settings);
@@ -101,15 +79,10 @@ const IntakeSensorCard: React.FC<IntakeSensorCardProps> = ({ tag, index }) => {
 
   // Get connection status badge
   const getConnectionBadge = () => {
-    // Special handling for Level (LT) sensor - use actual MQTT status, not value-change based
-    // Since lake levels don't change frequently, we use tag.status or tag.lastDataTime
+    // Special handling for Level (LT) sensor: use actual MQTT status only
+    // (lake level rarely changes, so value-change heuristics are unreliable).
     if (tag.id === 'INT-002') {
-      // For Level (LT): Check actual MQTT connection status from tag data
-      // tag.status comes from useMqttTagSync and reflects real MQTT data reception
-      const isReallyConnected = tag.status === 'connected' || 
-        (tag.lastDataTime && (new Date().getTime() - tag.lastDataTime.getTime()) < DISCONNECT_TIMEOUT);
-      
-      if (isReallyConnected) {
+      if (tag.status !== 'disconnected') {
         return (
           <span className="status-indicator status-active">
             <Wifi className="w-3 h-3 text-success" />
