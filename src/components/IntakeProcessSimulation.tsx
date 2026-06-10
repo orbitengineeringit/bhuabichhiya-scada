@@ -28,7 +28,7 @@ const IntakeProcessSimulation: React.FC = () => {
 
   const kwLive = (() => {
     if (!kwTag) return false;
-    return kwTag.source === 'mqtt';
+    return kwTag.status !== 'disconnected';
   })();
 
   const pump1Running = pt1Val > 1.5;
