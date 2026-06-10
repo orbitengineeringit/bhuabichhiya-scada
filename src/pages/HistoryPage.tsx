@@ -6,6 +6,10 @@ import GlobalFilterBar, { GlobalFilters, AssetFilter } from '@/components/Global
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Progress } from '@/components/ui/progress';
+import { useScada } from '@/contexts/ScadaContext';
+import ExcelJS from 'exceljs';
 import { 
   Download, 
   FileSpreadsheet, 
@@ -212,6 +216,14 @@ const HistoryPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [exportProgress, setExportProgress] = useState<{
+    open: boolean;
+    phase: 'estimating' | 'fetching' | 'building' | 'done';
+    fetched: number;
+    total: number;
+    estSec: number;
+    startedAt: number;
+  }>({ open: false, phase: 'estimating', fetched: 0, total: 0, estSec: 0, startedAt: 0 });
   const [autoRefresh, setAutoRefresh] = useState(false);
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
