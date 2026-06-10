@@ -54,44 +54,43 @@ const GlobalFilterBar: React.FC<GlobalFilterBarProps> = ({ filters, onFiltersCha
 
   return (
     <div className={cn(
-      "premium-card rounded-xl p-3 mb-4 flex flex-wrap items-center gap-3",
+      "premium-card rounded-xl p-2.5 sm:p-3 mb-4 flex flex-wrap items-center gap-2 sm:gap-3",
       compact && "p-2 gap-2"
     )}>
-      <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
-      
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 text-xs">
-            <CalendarIcon className="mr-1 h-3 w-3" />
-            {filters.startDate ? format(filters.startDate, 'MMM dd') : 'Start'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={filters.startDate}
-            onSelect={(d) => onFiltersChange({ ...filters, startDate: d })}
-            disabled={{ after: new Date() }} className="pointer-events-auto" />
-        </PopoverContent>
-      </Popover>
+      <div className="flex items-center gap-2 w-full sm:w-auto">
+        <Filter className="h-4 w-4 text-muted-foreground shrink-0" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs flex-1 sm:flex-none justify-start">
+              <CalendarIcon className="mr-1 h-3 w-3" />
+              {filters.startDate ? format(filters.startDate, 'MMM dd') : 'Start'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={filters.startDate}
+              onSelect={(d) => onFiltersChange({ ...filters, startDate: d })}
+              disabled={{ after: new Date() }} className="pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+        <span className="text-xs text-muted-foreground">→</span>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 text-xs flex-1 sm:flex-none justify-start">
+              <CalendarIcon className="mr-1 h-3 w-3" />
+              {filters.endDate ? format(filters.endDate, 'MMM dd') : 'End'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar mode="single" selected={filters.endDate}
+              onSelect={(d) => onFiltersChange({ ...filters, endDate: d })}
+              disabled={{ after: new Date() }} className="pointer-events-auto" />
+          </PopoverContent>
+        </Popover>
+      </div>
 
-      <span className="text-xs text-muted-foreground">→</span>
+      <div className="hidden sm:block w-px h-6 bg-border" />
 
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-8 text-xs">
-            <CalendarIcon className="mr-1 h-3 w-3" />
-            {filters.endDate ? format(filters.endDate, 'MMM dd') : 'End'}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar mode="single" selected={filters.endDate}
-            onSelect={(d) => onFiltersChange({ ...filters, endDate: d })}
-            disabled={{ after: new Date() }} className="pointer-events-auto" />
-        </PopoverContent>
-      </Popover>
-
-      <div className="w-px h-6 bg-border" />
-
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap gap-1 w-full sm:w-auto">
         {ASSET_OPTIONS.map(opt => (
           <Badge
             key={opt.value}
@@ -107,24 +106,25 @@ const GlobalFilterBar: React.FC<GlobalFilterBarProps> = ({ filters, onFiltersCha
         ))}
       </div>
 
-      <div className="w-px h-6 bg-border" />
+      <div className="hidden sm:block w-px h-6 bg-border" />
 
-      <Select value={filters.density} onValueChange={(v: DensityFilter) => onFiltersChange({ ...filters, density: v })}>
-        <SelectTrigger className="h-8 w-[120px] text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="fast">⚡ Fast</SelectItem>
-          <SelectItem value="detailed">📊 Detailed</SelectItem>
-          <SelectItem value="analytical">📈 Analytical</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {onApply && (
-        <Button size="sm" className="h-8 text-xs ml-auto" onClick={onApply}>
-          Apply
-        </Button>
-      )}
+      <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto">
+        <Select value={filters.density} onValueChange={(v: DensityFilter) => onFiltersChange({ ...filters, density: v })}>
+          <SelectTrigger className="h-8 flex-1 sm:w-[120px] sm:flex-none text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="fast">⚡ Fast</SelectItem>
+            <SelectItem value="detailed">📊 Detailed</SelectItem>
+            <SelectItem value="analytical">📈 Analytical</SelectItem>
+          </SelectContent>
+        </Select>
+        {onApply && (
+          <Button size="sm" className="h-8 text-xs" onClick={onApply}>
+            Apply
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
