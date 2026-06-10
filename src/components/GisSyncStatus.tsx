@@ -359,12 +359,11 @@ const StatCard = ({ label, icon, value, accent }: {
   </div>
 );
 
-const StationCard = ({ label, deviceId, success, status, duration, timeStr, rows, payload, responseText }: {
+const StationCard = ({ label, deviceId, success, unknown: unknownProp, status, duration, timeStr, rows, payload, responseText }: {
   label: string; deviceId: string; success: boolean; unknown?: boolean;
   status?: number | null; duration?: number | null; timeStr: string;
   rows: ParamRow[]; payload: any; responseText?: string | null;
 }) => {
-  const u = (arguments as any); // noop
   const [showJson, setShowJson] = useState(false);
   const [showResp, setShowResp] = useState(false);
   return (
