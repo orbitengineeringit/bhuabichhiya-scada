@@ -2,11 +2,16 @@ import React, { useState, useEffect, forwardRef, memo, useMemo } from 'react';
 import { useScada } from '@/contexts/ScadaContext';
 import { useMqtt } from '@/contexts/MqttContext';
 import { Clock, Activity, Database, Wifi, WifiOff, Loader2 } from 'lucide-react';
+import GisSyncStatus from './GisSyncStatus';
+import { useGisAutoSync } from '@/hooks/useGisAutoSync';
 
 const StatusBar = memo(forwardRef<HTMLDivElement>((_, ref) => {
   const { getActiveTagCount, intakeTags, ohtTags, wtpTags } = useScada();
   const { isConnected, isConnecting, config } = useMqtt();
   const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Background push to MP Urban GIS every 30s
+  useGisAutoSync(30_000);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -48,6 +53,7 @@ const StatusBar = memo(forwardRef<HTMLDivElement>((_, ref) => {
               {isConnected ? 'Online' : showConnecting ? '...' : 'Off'}
             </span>
           </div>
+          <GisSyncStatus />
         </div>
 
         {/* Center: Stats */}

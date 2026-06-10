@@ -9,7 +9,7 @@ import type { TagData } from '@/contexts/ScadaContext';
  *  - 'inactive'  : Active communication (value is exactly 0.0).
  *  - 'no-data'   : Disconnected / Timeout (no data received).
  */
-export type ConnectionState = 'connected' | 'no-data' | 'inactive';
+export type ConnectionState = 'connected' | 'no-data' | 'inactive' | 'stale';
 
 export const getTagConnection = (tag?: TagData | null): ConnectionState => {
   if (!tag) return 'no-data';
