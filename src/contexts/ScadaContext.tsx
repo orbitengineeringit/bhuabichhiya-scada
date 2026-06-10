@@ -116,7 +116,7 @@ export const ScadaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const loadConfig = async () => {
       try {
         const [plantResult, tagResult] = await Promise.all([
-          supabase.from('plant_config').select('*').limit(1).maybeSingle(),
+          supabase.from('plant_config').select('id, plant_name').limit(1).maybeSingle(),
           supabase.from('tag_config').select('*'),
         ]);
         if (plantResult.data) setPlantNameState(plantResult.data.plant_name);
@@ -142,7 +142,6 @@ export const ScadaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               high_setpoint: defaults.high,
               low_setpoint: defaults.low,
               alarm_enabled: false,
-              alarm_emails: [],
             };
           });
 
@@ -160,7 +159,7 @@ export const ScadaProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               dbId: config?.id,
               highSetpoint: config?.high_setpoint ? Number(config.high_setpoint) : undefined,
               lowSetpoint: config?.low_setpoint ? Number(config.low_setpoint) : undefined,
-              alarmEmails: (config as any)?.alarm_emails || [],
+              alarmEmails: [],
               alarmEnabled: config?.alarm_enabled ?? false,
             };
           });

@@ -235,8 +235,12 @@ serve(async (req) => {
               .single();
 
             // Send email notification
-            const { data: plantConfig } = await supabase.from('plant_config').select('plant_name, export_emails').limit(1).maybeSingle();
-            const emails: string[] = (plantConfig as any)?.export_emails || [];
+            const { data: plantConfig } = await supabase.from('plant_config').select('plant_name').limit(1).maybeSingle();
+            const { data: recipientRows } = await supabase
+              .from('notification_recipients')
+              .select('email')
+              .eq('scope', 'export');
+            const emails: string[] = (recipientRows || []).map((r: any) => r.email);
             const plantName = (plantConfig as any)?.plant_name || 'Bhua Bicchiya SCADA';
             const resendApiKey = Deno.env.get('RESEND_API_KEY');
             let emailSent = false;

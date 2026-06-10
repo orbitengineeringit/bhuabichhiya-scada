@@ -61,21 +61,18 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({
 
   const loadEmails = async () => {
     if (!tag.dbId) return;
-    
+
     try {
       const { data } = await supabase
-        .from('tag_config')
-        .select('alarm_emails')
-        .eq('id', tag.dbId)
-        .maybeSingle();
-      
-      if (data?.alarm_emails) {
-        setEmails(data.alarm_emails);
-      } else {
-        setEmails([]);
-      }
+        .from('notification_recipients')
+        .select('email')
+        .eq('scope', 'alarm')
+        .eq('tag_config_id', tag.dbId);
+
+      setEmails((data || []).map((r) => r.email));
     } catch (error) {
       logError('AlarmSettings.loadEmails', error);
+      setEmails([]);
     }
   };
 
@@ -141,11 +138,29 @@ const AlarmSettingsModal: React.FC<AlarmSettingsModalProps> = ({
             high_setpoint: settings.highSetpoint || null,
             low_setpoint: settings.lowSetpoint || null,
             alarm_enabled: settings.alarmEnabled,
-            alarm_emails: settings.alarmEmails,
           })
           .eq('id', tag.dbId);
 
         if (error) throw error;
+
+        // Replace alarm recipients atomically: delete existing, insert new
+        await supabase
+          .from('notification_recipients')
+          .delete()
+          .eq('scope', 'alarm')
+          .eq('tag_config_id', tag.dbId);
+
+        if (settings.alarmEmails.length > 0) {
+          const rows = settings.alarmEmails.map((email) => ({
+            scope: 'alarm',
+            tag_config_id: tag.dbId!,
+            email: email.toLowerCase(),
+          }));
+          const { error: insertErr } = await supabase
+            .from('notification_recipients')
+            .insert(rows);
+          if (insertErr) throw insertErr;
+        }
       }
 
       onSave(settings);

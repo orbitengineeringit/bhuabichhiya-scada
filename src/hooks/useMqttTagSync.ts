@@ -120,7 +120,7 @@ export const useMqttTagSync = (
       const { data: created } = await supabase.from('tag_config').insert({
         section, tag_id: tagId, label: sensor?.label || '', unit: sensor?.unit || '',
         is_active: true, activated_at: new Date().toISOString(),
-        high_setpoint: null, low_setpoint: null, alarm_enabled: true, alarm_emails: [],
+        high_setpoint: null, low_setpoint: null, alarm_enabled: true,
       }).select('id').single();
       if (created?.id) tagConfigCache.current.set(key, created.id);
     } catch (error) { logError('TagSync.ensureTagConfigExists', error); }
