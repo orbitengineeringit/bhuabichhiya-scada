@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { useScada } from '@/contexts/ScadaContext';
 import SensorStatusStrip from './SensorStatusStrip';
+import { useTagConnection } from '@/hooks/useTagConnection';
 
 /**
  * Intake Well - Process Simulation View
