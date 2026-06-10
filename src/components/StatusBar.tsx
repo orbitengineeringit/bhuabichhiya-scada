@@ -11,7 +11,7 @@ const StatusBar = memo(forwardRef<HTMLDivElement>((_, ref) => {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Background push to MP Urban GIS every 30s
-  useGisAutoSync(30_000);
+  useGisAutoSync(60 * 60 * 1000);
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);

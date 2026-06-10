@@ -221,7 +221,7 @@ const GisSyncStatus = () => {
               label="LAST PUSHED TIME"
               icon={<Clock className="h-4 w-4 text-primary" />}
               value={<span className="text-base font-bold font-mono">{lastTimeStr}</span>}
-              accent={<span className="text-[10px] text-muted-foreground">30 sec cycle</span>}
+              accent={<span className="text-[10px] text-muted-foreground">1 hr cycle · manual any time</span>}
             />
             <div className="rounded-xl border bg-card p-3 flex flex-col gap-2">
               <div className="text-[10px] font-bold tracking-wider text-muted-foreground">MANUAL SYNC OVERRIDE</div>
