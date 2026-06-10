@@ -549,10 +549,7 @@ const WtpProcessSimulation: React.FC = () => {
   const totVal = findTag('WTP-Totalizer')?.value ?? 0;
   const kwTag = findTag('WTP-KW');
   const kwVal = kwTag?.value ?? 0;
-  const kwLive = (() => {
-    if (!kwTag) return false;
-    return kwTag.status !== 'disconnected';
-  })();
+  const kwLive = useTagConnection(kwTag) === 'connected';
 
   const pt1Val = findTag('WTP-PT1')?.value ?? 0;
   const pt2Val = findTag('WTP-PT2')?.value ?? 0;

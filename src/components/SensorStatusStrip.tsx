@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { TagData } from '@/contexts/ScadaContext';
+import { isTagLive } from '@/hooks/useTagConnection';
 
 interface SensorStatusStripProps {
   tags: TagData[];
@@ -8,13 +9,6 @@ interface SensorStatusStripProps {
   labels?: Record<string, string>;
 }
 
-const isLive = (tag?: TagData): boolean => {
-  if (!tag) return false;
-  // Instant ON/OFF: rely solely on upstream tag.status, which useMqttTagSync
-  // flips within ~1s of MQTT going silent. Zero values are still "live".
-  return tag.status !== 'disconnected';
-};
-
 /**
  * Compact horizontal strip showing ON/OFF status for each listed sensor.
  * Green dot = MQTT data flowing, Red dot = no data.
@@ -22,7 +16,7 @@ const isLive = (tag?: TagData): boolean => {
 const SensorStatusStrip: React.FC<SensorStatusStripProps> = ({ tags, sensorIds, labels }) => {
   const items = useMemo(() => sensorIds.map(id => {
     const tag = tags.find(t => t.id === id);
-    return { id, tag, live: isLive(tag), label: labels?.[id] ?? tag?.label ?? id };
+    return { id, tag, live: isTagLive(tag), label: labels?.[id] ?? tag?.label ?? id };
   }), [tags, sensorIds, labels]);
 
   const liveCount = items.filter(i => i.live).length;
