@@ -28,11 +28,6 @@ const IntakeProcessSimulation: React.FC = () => {
 
   const kwLive = (() => {
     if (!kwTag) return false;
-    if (kwTag.status === 'disconnected') return false;
-    if (kwTag.lastDataTime) {
-      const elapsed = Date.now() - new Date(kwTag.lastDataTime).getTime();
-      return elapsed <= 30000;
-    }
     return kwTag.source === 'mqtt';
   })();
 
