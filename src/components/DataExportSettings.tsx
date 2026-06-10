@@ -34,14 +34,12 @@ const DataExportSettings: React.FC = () => {
   const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [configResult, exportsResult] = await Promise.all([
-        supabase.from('plant_config').select('export_emails').limit(1).maybeSingle(),
+      const [recipientsResult, exportsResult] = await Promise.all([
+        supabase.from('notification_recipients').select('email').eq('scope', 'export'),
         supabase.from('data_exports').select('*').order('created_at', { ascending: false }).limit(20),
       ]);
 
-      if (configResult.data) {
-        setEmails((configResult.data as any).export_emails || []);
-      }
+      setEmails((recipientsResult.data || []).map((r: any) => r.email));
       if (exportsResult.data) {
         setExports(exportsResult.data as unknown as DataExport[]);
       }
@@ -57,12 +55,25 @@ const DataExportSettings: React.FC = () => {
   const saveEmails = async (updatedEmails: string[]) => {
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('plant_config')
-        .update({ export_emails: updatedEmails } as any)
-        .not('id', 'is', null);
+      // Replace export recipients: delete all + insert new
+      const { error: delErr } = await supabase
+        .from('notification_recipients')
+        .delete()
+        .eq('scope', 'export');
+      if (delErr) throw delErr;
 
-      if (error) throw error;
+      if (updatedEmails.length > 0) {
+        const rows = updatedEmails.map((email) => ({
+          scope: 'export',
+          tag_config_id: null,
+          email: email.toLowerCase(),
+        }));
+        const { error: insErr } = await supabase
+          .from('notification_recipients')
+          .insert(rows);
+        if (insErr) throw insErr;
+      }
+
       setEmails(updatedEmails);
       toast.success('Export emails updated');
     } catch (error) {

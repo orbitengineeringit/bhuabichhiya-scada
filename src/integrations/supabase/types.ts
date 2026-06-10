@@ -224,19 +224,19 @@ export type Database = {
           wtp_device_id: string
         }
         Insert: {
-          api_token?: string
+          api_token: string
           auto_sync_enabled?: boolean
           base_url?: string
           created_at?: string
           id?: string
-          intake_device_id?: string
-          oht1_device_id?: string
-          oht2_device_id?: string
-          oht3_device_id?: string
+          intake_device_id: string
+          oht1_device_id: string
+          oht2_device_id: string
+          oht3_device_id: string
           sync_interval_seconds?: number
           updated_at?: string
-          vendor_key?: string
-          wtp_device_id?: string
+          vendor_key: string
+          wtp_device_id: string
         }
         Update: {
           api_token?: string
@@ -419,24 +419,53 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_recipients: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          scope: string
+          tag_config_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          scope: string
+          tag_config_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          scope?: string
+          tag_config_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_recipients_tag_config_id_fkey"
+            columns: ["tag_config_id"]
+            isOneToOne: false
+            referencedRelation: "tag_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       plant_config: {
         Row: {
           created_at: string
-          export_emails: string[] | null
           id: string
           plant_name: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
-          export_emails?: string[] | null
           id?: string
           plant_name?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
-          export_emails?: string[] | null
           id?: string
           plant_name?: string | null
           updated_at?: string
@@ -491,7 +520,6 @@ export type Database = {
       tag_config: {
         Row: {
           activated_at: string | null
-          alarm_emails: string[] | null
           alarm_enabled: boolean | null
           created_at: string
           high_setpoint: number | null
@@ -506,7 +534,6 @@ export type Database = {
         }
         Insert: {
           activated_at?: string | null
-          alarm_emails?: string[] | null
           alarm_enabled?: boolean | null
           created_at?: string
           high_setpoint?: number | null
@@ -521,7 +548,6 @@ export type Database = {
         }
         Update: {
           activated_at?: string | null
-          alarm_emails?: string[] | null
           alarm_enabled?: boolean | null
           created_at?: string
           high_setpoint?: number | null

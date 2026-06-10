@@ -96,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const { data: tagConfig } = await supabase
       .from('tag_config')
-      .select('alarm_emails, alarm_enabled')
+      .select('id, alarm_enabled')
       .eq('tag_id', alarmRecord.tag_id)
       .maybeSingle();
 
@@ -106,7 +106,12 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const rawEmails: string[] = tagConfig?.alarm_emails || [];
+    const { data: recipientRows } = await supabase
+      .from('notification_recipients')
+      .select('email')
+      .eq('scope', 'alarm')
+      .eq('tag_config_id', tagConfig?.id ?? '');
+    const rawEmails: string[] = (recipientRows || []).map((r: any) => r.email);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const recipientEmails = rawEmails
       .filter(e => typeof e === 'string' && emailRegex.test(e.trim()) && e.trim().length <= 255)
