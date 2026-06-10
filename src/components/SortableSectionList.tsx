@@ -48,7 +48,7 @@ const SortableSectionItem: React.FC<SortableSectionItemProps> = ({ id, children 
       <button
         {...attributes}
         {...listeners}
-        className="absolute -top-1 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-md bg-muted/90 border border-border/50 opacity-0 group-hover/section:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing touch-none flex items-center gap-1"
+        className="hidden sm:flex absolute -top-1 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-md bg-muted/90 border border-border/50 opacity-0 group-hover/section:opacity-100 transition-opacity duration-200 cursor-grab active:cursor-grabbing touch-none items-center gap-1"
         aria-label="Drag to reorder section"
       >
         <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
