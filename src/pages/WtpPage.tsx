@@ -268,17 +268,17 @@ const WtpPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background grid-pattern">
       <main className="flex-1 container mx-auto px-4 py-6 md:py-8">
-        <div className="flex items-center justify-between gap-3 mb-6 opacity-0 animate-fade-in">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-accent/10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 opacity-0 animate-fade-in">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-accent/10 shrink-0">
               <WtpIcon size={36} />
             </div>
-            <div>
-              <h2 className="text-xl md:text-2xl font-bold text-foreground">Water Treatment Plant (WTP)</h2>
-              <p className="text-sm text-muted-foreground">{WTP_SENSORS.length} instruments monitoring</p>
+            <div className="min-w-0">
+              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-foreground truncate">Water Treatment Plant (WTP)</h2>
+              <p className="text-xs sm:text-sm text-muted-foreground">{WTP_SENSORS.length} instruments monitoring</p>
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap sm:shrink-0">
             {/* Cards / Process View Toggle */}
             <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary border border-border">
               <Button
