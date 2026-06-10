@@ -12,6 +12,15 @@ export const useGisAutoSync = (intervalMs = 60 * 60 * 1000) => {
   useEffect(() => {
     let cancelled = false;
 
+    // Clear any historical payloads that may have contained credentials
+    // (pre-fix versions stored the full auth block in localStorage).
+    try {
+      const stale = localStorage.getItem('gov_last_payload');
+      if (stale && stale.includes('"token"')) {
+        localStorage.removeItem('gov_last_payload');
+      }
+    } catch { /* ignore */ }
+
     const tick = async () => {
       if (inFlight.current) return;
       inFlight.current = true;

@@ -1,4 +1,4 @@
 project_id = "bnyojzfjxjljewjplhmi"
 
 [functions.gis-sync]
-verify_jwt = false
+verify_jwt = true

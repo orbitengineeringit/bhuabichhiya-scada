@@ -43,13 +43,35 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const started = Date.now();
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+
+  // --- AuthN/AuthZ: require a signed-in user (any authenticated user can trigger sync) ---
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const { data: { user }, error: userErr } = await userClient.auth.getUser();
+  if (userErr || !user) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+
+  // Service-role client for reading credentials + writing audit log
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
+    supabaseUrl,
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
   let endpoint = "";
   let requestPayload: any = null;
+  let sanitisedPayload: any = null;
   let responseStatus: number | null = null;
   let responseBody = "";
   let success = false;
@@ -154,16 +176,21 @@ Deno.serve(async (req) => {
 
   const duration = Date.now() - started;
 
+  // Build a credential-free copy of the payload for the audit log AND the HTTP response.
+  if (requestPayload) {
+    sanitisedPayload = { ...requestPayload, auth: "[REDACTED]" };
+  }
+
   // 5) Audit log (always)
   try {
     await supabase.from("gis_sync_logs").insert({
-      endpoint, request_payload: requestPayload, response_status: responseStatus,
+      endpoint, request_payload: sanitisedPayload, response_status: responseStatus,
       response_body: responseBody, success, error_message: errorMessage, duration_ms: duration,
     });
   } catch (_) { /* swallow */ }
 
   return new Response(JSON.stringify({
     success, proof: { endpoint, status: responseStatus, response: responseBody, duration_ms: duration },
-    request_payload: requestPayload, error: errorMessage,
+    request_payload: sanitisedPayload, error: errorMessage,
   }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 });
