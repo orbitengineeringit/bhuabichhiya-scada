@@ -104,7 +104,7 @@ const sensorToTag = (sensor: BuaBicchiyaSensor): TagData => ({
 const ScadaContext = createContext<ScadaContextType | undefined>(undefined);
 
 export const ScadaProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [plantName, setPlantNameState] = useState('Bua Bicchiya SCADA');
+  const [plantName, setPlantNameState] = useState('Bhua Bicchiya SCADA');
   const [configMode, setConfigModeState] = useState(false);
   const [intakeTags, setIntakeTags] = useState<TagData[]>(() => INTAKE_SENSORS.map(sensorToTag));
   const [ohtTags, setOhtTags] = useState<TagData[]>(() => ALL_OHT_SENSORS.map(sensorToTag));

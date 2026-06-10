@@ -30,7 +30,7 @@ const StatusBar = memo(forwardRef<HTMLDivElement>((_, ref) => {
         <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
           <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
             <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-success pulse-live shrink-0" />
-            <span className="text-gradient-primary font-semibold truncate hidden sm:block">Bua Bicchiya SCADA</span>
+            <span className="text-gradient-primary font-semibold truncate hidden sm:block">Bhua Bicchiya SCADA</span>
             <span className="text-gradient-primary font-semibold sm:hidden">SCADA</span>
           </div>
           {/* MQTT Status Pill */}

@@ -803,7 +803,7 @@ const WtpProcessSimulation: React.FC = () => {
           WATER TREATMENT PLANT — PROCESS FLOW
         </text>
         <text x={850} y={52} textAnchor="middle" fontSize="16" fontWeight="600" fill="hsl(var(--muted-foreground))">
-          Bua Bicchiya WTP | AMRUT 2.0 | Live SCADA Mimic
+          Bhua Bicchiya WTP | AMRUT 2.0 | Live SCADA Mimic
         </text>
 
         {/* ═══ GROUND ═══ */}

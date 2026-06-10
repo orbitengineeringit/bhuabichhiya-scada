@@ -125,7 +125,7 @@ export const MqttProvider: React.FC<{ children: ReactNode; onMessage?: (message:
     try {
       const parsed = JSON.parse(payload);
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-        // Handle {TAG: "NAME", VALUE: x} shape (Bua Bicchiya broker format)
+        // Handle {TAG: "NAME", VALUE: x} shape (Bhua Bicchiya broker format)
         const keys = Object.keys(parsed);
         const hasTag = keys.some(k => k.toUpperCase() === 'TAG');
         const hasVal = keys.some(k => k.toUpperCase() === 'VALUE');
@@ -205,7 +205,7 @@ export const MqttProvider: React.FC<{ children: ReactNode; onMessage?: (message:
 
     try {
       const options: IClientOptions = {
-        clientId: config.clientId || `bua_bicchiya_${Math.random().toString(16).substr(2, 8)}`,
+        clientId: config.clientId || `bhua_bicchiya_${Math.random().toString(16).substr(2, 8)}`,
         clean: true,
         connectTimeout: 10000,
         reconnectPeriod: 3000, // Native self-healing reconnect every 3s

@@ -105,7 +105,7 @@ const LoginPage = () => {
             </p>
 
             <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground font-semibold px-2 py-1 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/40 dark:border-slate-800/40 mb-4 max-w-sm mx-auto">
-              <span>Client: <span className="text-foreground">CMO, NP Bua Bicchiya</span></span>
+              <span>Client: <span className="text-foreground">CMO, NP Bhua Bicchiya</span></span>
               <span className="w-1 h-1 rounded-full bg-border" />
               <span>Capacity: <span className="text-foreground">1.8 MLD</span></span>
             </div>

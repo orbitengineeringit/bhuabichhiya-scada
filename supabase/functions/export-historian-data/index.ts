@@ -202,7 +202,7 @@ serve(async (req) => {
 
             const startStr = periodStart.toISOString().split('T')[0];
             const endStr = periodEnd.toISOString().split('T')[0];
-            const fileName = `bua_bicchiya_scada_export_${startStr}_to_${endStr}.csv`;
+            const fileName = `bhua_bicchiya_scada_export_${startStr}_to_${endStr}.csv`;
 
             // Ensure storage bucket exists
             const { data: buckets } = await supabase.storage.listBuckets();
@@ -237,7 +237,7 @@ serve(async (req) => {
             // Send email notification
             const { data: plantConfig } = await supabase.from('plant_config').select('plant_name, export_emails').limit(1).maybeSingle();
             const emails: string[] = (plantConfig as any)?.export_emails || [];
-            const plantName = (plantConfig as any)?.plant_name || 'Bua Bicchiya SCADA';
+            const plantName = (plantConfig as any)?.plant_name || 'Bhua Bicchiya SCADA';
             const resendApiKey = Deno.env.get('RESEND_API_KEY');
             let emailSent = false;
 

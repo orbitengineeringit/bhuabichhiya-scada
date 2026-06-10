@@ -33,7 +33,7 @@ const MqttSettingsPage: React.FC = () => {
                 <Settings className="h-6 w-6 text-primary" />
                 MQTT Configuration
               </h1>
-              <p className="text-sm text-muted-foreground mt-1">Configure MQTT broker for Bua Bicchiya SCADA</p>
+              <p className="text-sm text-muted-foreground mt-1">Configure MQTT broker for Bhua Bicchiya SCADA</p>
             </div>
           </div>
           <MqttStatus />
@@ -88,7 +88,7 @@ const MqttSettingsPage: React.FC = () => {
 
           <Card className="glass">
             <CardHeader>
-               <CardTitle>Topic Subscriptions (Bua Bicchiya)</CardTitle>
+               <CardTitle>Topic Subscriptions (Bhua Bicchiya)</CardTitle>
                <CardDescription>5 MQTT topics for OHT×3, Intake, and WTP — managed securely via database</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

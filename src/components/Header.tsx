@@ -72,7 +72,7 @@ const Header = memo(forwardRef<HTMLElement>((_, ref) => {
               <div className="absolute inset-0 blur-lg bg-primary/20 rounded-full -z-10" />
             </div>
             <h1 className="text-[11px] sm:text-sm md:text-lg lg:text-2xl font-bold text-foreground tracking-tight whitespace-nowrap truncate min-w-0">
-              Bua Bicchiya <span className="text-gradient-primary">SCADA</span>
+              Bhua Bicchiya <span className="text-gradient-primary">SCADA</span>
               <span className="hidden md:inline text-[10px] lg:text-xs font-normal text-muted-foreground ml-2">AMRUT 2.0</span>
             </h1>
           </div>

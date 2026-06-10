@@ -1,6 +1,6 @@
-# Bua Bicchiya SCADA Monitoring System
+# Bhua Bicchiya SCADA Monitoring System
 
-A real-time monitoring dashboard for the Bua Bicchiya Water Supply SCADA system.
+A real-time monitoring dashboard for the Bhua Bicchiya Water Supply SCADA system.
 
 ## Technologies Used
 

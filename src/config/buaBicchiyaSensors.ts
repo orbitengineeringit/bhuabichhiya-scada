@@ -1,5 +1,5 @@
 /**
- * BUA BICCHIYA SCADA - COMPLETE SENSOR CONFIGURATION
+ * BHUA BICCHIYA SCADA - COMPLETE SENSOR CONFIGURATION
  * 
  * MQTT topic paths are loaded securely from the database at runtime.
  * Only topic keys (OHT1, OHT2, OHT3, INTAKE, WTP) are defined here.
@@ -107,7 +107,7 @@ ALL_SENSORS.filter(s => s.derivedFromPt).forEach(pump => {
 // ==================== MQTT TOPICS ====================
 export const MQTT_TOPIC_KEYS = ['OHT1','OHT2','OHT3','INTAKE','WTP'] as const;
 
-// Default topics for Bua Bicchiya plant — overridable from DB config
+// Default topics for Bhua Bicchiya plant — overridable from DB config
 export const DEFAULT_MQTT_TOPICS: Record<string, string> = {
   INTAKE: 'Orbit/BICHIYA/INTAKE/0000000001',
   WTP:    'Orbit/BICHIYA/WTP/0000000001',

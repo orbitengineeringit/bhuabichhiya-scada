@@ -330,7 +330,7 @@ const Index = () => {
                 </div>
                 <div className="mt-2">
                   <p className="text-xs sm:text-sm font-bold text-foreground leading-snug">Chief Municipal Officer</p>
-                  <p className="text-[10px] font-semibold text-muted-foreground/80 mt-0.5">NP Bua Bicchiya</p>
+                  <p className="text-[10px] font-semibold text-muted-foreground/80 mt-0.5">NP Bhua Bicchiya</p>
                 </div>
               </div>
 
