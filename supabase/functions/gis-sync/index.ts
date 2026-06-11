@@ -43,12 +43,17 @@ const num = (v: number | null | undefined): number =>
 let cachedCronSecret: string | null = null;
 async function getCronSecret(client: ReturnType<typeof createClient>): Promise<string | null> {
   if (cachedCronSecret) return cachedCronSecret;
-  const { data, error } = await client.rpc("get_gis_cron_secret");
-  if (error || !data) {
+  const { data, error } = await client
+    .from("gis_config")
+    .select("cron_secret")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.cron_secret) {
     console.error("getCronSecret failed:", error?.message);
     return null;
   }
-  cachedCronSecret = data as string;
+  cachedCronSecret = data.cron_secret as string;
   return cachedCronSecret;
 }
 
