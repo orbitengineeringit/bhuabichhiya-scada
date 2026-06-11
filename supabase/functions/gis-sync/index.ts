@@ -71,6 +71,13 @@ Deno.serve(async (req) => {
   const cronKey = req.headers.get("x-cron-key");
   const expectedCronKey = await getCronSecret(supabase);
   const isCron = !!cronKey && !!expectedCronKey && cronKey === expectedCronKey;
+  console.log("auth-check", {
+    hasCronKey: !!cronKey,
+    hasExpected: !!expectedCronKey,
+    expectedLen: expectedCronKey?.length ?? 0,
+    cronKeyLen: cronKey?.length ?? 0,
+    isCron,
+  });
 
   if (!isCron) {
     const authHeader = req.headers.get("Authorization");
