@@ -1,0 +1,2 @@
+ALTER TABLE public.gis_config ADD COLUMN IF NOT EXISTS cron_secret text;
+UPDATE public.gis_config SET cron_secret = (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'gis_cron_secret' LIMIT 1) WHERE cron_secret IS NULL;

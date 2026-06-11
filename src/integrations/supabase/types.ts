@@ -213,6 +213,7 @@ export type Database = {
           auto_sync_enabled: boolean
           base_url: string
           created_at: string
+          cron_secret: string | null
           id: string
           intake_device_id: string
           oht1_device_id: string
@@ -228,6 +229,7 @@ export type Database = {
           auto_sync_enabled?: boolean
           base_url?: string
           created_at?: string
+          cron_secret?: string | null
           id?: string
           intake_device_id: string
           oht1_device_id: string
@@ -243,6 +245,7 @@ export type Database = {
           auto_sync_enabled?: boolean
           base_url?: string
           created_at?: string
+          cron_secret?: string | null
           id?: string
           intake_device_id?: string
           oht1_device_id?: string
