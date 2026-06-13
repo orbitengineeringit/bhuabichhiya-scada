@@ -644,6 +644,17 @@ const HistoryPage: React.FC = () => {
     return { pages, from: ((currentPage - 1) * pageSize) + 1, to: Math.min(currentPage * pageSize, totalCount) };
   }, [totalPages, currentPage, totalCount, pageSize]);
 
+  // Sort current page rows for display: Intake → WTP → OHT-1/2/3, then tag, then latest first
+  const sortedLogs = useMemo(() => {
+    return [...logs].sort((a, b) => {
+      const oa = getSectionOrder(a.section, a.tag_id);
+      const ob = getSectionOrder(b.section, b.tag_id);
+      if (oa !== ob) return oa - ob;
+      if (a.tag_id !== b.tag_id) return a.tag_id.localeCompare(b.tag_id);
+      return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+    });
+  }, [logs]);
+
   return (
     <div className="min-h-screen flex flex-col bg-background grid-pattern relative overflow-hidden">
       {/* Floating gradient decorative orbs for premium depth */}
