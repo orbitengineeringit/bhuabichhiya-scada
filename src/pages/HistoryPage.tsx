@@ -17,6 +17,8 @@ import {
   Database, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronsLeft,
+  ChevronsRight,
   RefreshCw,
   Waves, 
   Filter, 
