@@ -923,10 +923,38 @@ const HistoryPage: React.FC = () => {
                 </div>
                 {paginationInfo && (
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-border/40">
-                    <div className="text-sm text-muted-foreground font-medium">
-                      Showing <span className="font-semibold text-foreground">{paginationInfo.from}</span> - <span className="font-semibold text-foreground">{paginationInfo.to}</span> of <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> records
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="text-sm text-muted-foreground font-medium">
+                        Showing <span className="font-semibold text-foreground">{paginationInfo.from}</span> - <span className="font-semibold text-foreground">{paginationInfo.to}</span> of <span className="font-semibold text-foreground">{totalCount.toLocaleString()}</span> records
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">Rows:</span>
+                        <Select
+                          value={String(pageSize)}
+                          onValueChange={(v) => { setPageSizeOverride(Number(v)); setCurrentPage(1); fetchLogs(1); }}
+                        >
+                          <SelectTrigger className="h-8 w-[80px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[25, 50, 100, 200, 500].map(n => (
+                              <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
                     <div className="flex items-center gap-1.5">
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-lg border-border/50 hover:bg-secondary transition-all"
+                        onClick={() => handlePageChange(1)} 
+                        disabled={currentPage === 1 || isLoading}
+                        title="First page"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </Button>
                       <Button 
                         variant="outline" 
                         size="icon" 
@@ -960,6 +988,16 @@ const HistoryPage: React.FC = () => {
                         disabled={currentPage === totalPages || isLoading}
                       >
                         <ChevronRight className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="icon" 
+                        className="h-8 w-8 rounded-lg border-border/50 hover:bg-secondary transition-all"
+                        onClick={() => handlePageChange(totalPages)} 
+                        disabled={currentPage === totalPages || isLoading}
+                        title="Last page"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
