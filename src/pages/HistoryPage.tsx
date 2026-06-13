@@ -265,6 +265,7 @@ const HistoryPage: React.FC = () => {
     startedAt: number;
   }>({ open: false, phase: 'estimating', fetched: 0, total: 0, estSec: 0, startedAt: 0 });
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [exportInterval, setExportInterval] = useState<ExportInterval>('all');
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
