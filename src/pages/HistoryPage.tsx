@@ -491,11 +491,25 @@ const HistoryPage: React.FC = () => {
       const startStr = format(globalFilters.startDate, 'd MMM yyyy');
       const endStr = format(globalFilters.endDate, 'd MMM yyyy');
       const genStr = format(new Date(), 'd MMM yyyy HH:mm');
-      infoCell.value = `📅 Period: ${startStr}  →  ${endStr}     📊 Records: ${totalCountVal.toLocaleString()}     🕒 Generated: ${genStr}`;
-      // Append interval note if downsampled
-      if (exportInterval !== 'all') {
-        infoCell.value = `📅 Period: ${startStr}  →  ${endStr}     📊 ${exportCount.toLocaleString()} of ${totalCountVal.toLocaleString()} records  •  Interval: ${INTERVAL_LABEL[exportInterval]}     🕒 Generated: ${genStr}`;
+      // Compute actual data range from processed rows (may differ from selected range
+      // if data didn't exist for the full selected period — e.g. plant started later).
+      let actualStr = '';
+      if (processed.length > 0) {
+        const times = processed.map(l => new Date(l.timestamp).getTime());
+        const minT = new Date(Math.min(...times));
+        const maxT = new Date(Math.max(...times));
+        const aS = format(minT, 'd MMM yyyy');
+        const aE = format(maxT, 'd MMM yyyy');
+        const rangeMismatch =
+          aS !== startStr || aE !== endStr;
+        actualStr = rangeMismatch
+          ? `  •  📂 Data Available: ${aS}  →  ${aE}`
+          : '';
       }
+      const recordsStr = exportInterval === 'all'
+        ? `📊 Records: ${totalCountVal.toLocaleString()}`
+        : `📊 ${exportCount.toLocaleString()} of ${totalCountVal.toLocaleString()} records  •  Interval: ${INTERVAL_LABEL[exportInterval]}`;
+      infoCell.value = `📅 Selected: ${startStr}  →  ${endStr}${actualStr}     ${recordsStr}     🕒 Generated: ${genStr}`;
       infoCell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF1F2937' } };
       infoCell.alignment = { horizontal: 'center', vertical: 'middle' };
       infoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
@@ -595,7 +609,10 @@ const HistoryPage: React.FC = () => {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       const intervalSuffix = exportInterval === 'all' ? '' : `_${exportInterval}`;
-      link.download = `scada_history_${format(globalFilters.startDate!, 'yyyyMMdd')}_${format(globalFilters.endDate!, 'yyyyMMdd')}${intervalSuffix}.xlsx`;
+      const fileStart = format(globalFilters.startDate!, 'd MMM yyyy');
+      const fileEnd = format(globalFilters.endDate!, 'd MMM yyyy');
+      const safePlant = (plantName || 'SCADA').replace(/[\\/:*?"<>|]/g, '');
+      link.download = `${safePlant} Scada History ${fileStart} to ${fileEnd}${intervalSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
