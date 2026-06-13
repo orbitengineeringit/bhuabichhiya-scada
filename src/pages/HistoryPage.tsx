@@ -783,6 +783,7 @@ const HistoryPage: React.FC = () => {
                           const isWtp = log.section === 'wtp';
                           const isIntake = log.section === 'intake';
                           const isOht = log.section === 'oht';
+                          const displaySection = getDisplaySection(log.section, log.tag_id);
                           
                           // Row dynamic left border and soft background gradient based on section
                           let rowBorderClass = "border-l-4 border-l-transparent";
@@ -868,7 +869,7 @@ const HistoryPage: React.FC = () => {
                                 {isOht && (
                                   <span className="inline-flex items-center px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20 backdrop-blur-sm shadow-sm uppercase tracking-wide">
                                     <OhtSvg className="h-3.5 w-3.5 mr-1.5 text-emerald-500 dark:text-emerald-400" />
-                                    OHT
+                                    {displaySection}
                                   </span>
                                 )}
                                 {!isWtp && !isIntake && !isOht && (
