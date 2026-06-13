@@ -770,7 +770,7 @@ const HistoryPage: React.FC = () => {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {logs.map((log) => {
+                        {sortedLogs.map((log) => {
                           const isPump = log.tag_id.includes('Pump');
                           const isWtp = log.section === 'wtp';
                           const isIntake = log.section === 'intake';
