@@ -35,6 +35,46 @@ import { useToast } from '@/hooks/use-toast';
 import { logError } from '@/lib/errorLogger';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+type ExportInterval = 'all' | '1m' | '30m' | '1h' | '1d';
+const INTERVAL_MS: Record<Exclude<ExportInterval, 'all'>, number> = {
+  '1m': 60_000,
+  '30m': 30 * 60_000,
+  '1h': 60 * 60_000,
+  '1d': 24 * 60 * 60_000,
+};
+const INTERVAL_LABEL: Record<ExportInterval, string> = {
+  'all': 'All data',
+  '1m': 'Every 1 minute',
+  '30m': 'Every 30 minutes',
+  '1h': 'Every 1 hour',
+  '1d': 'Every 1 day',
+};
+
+/** Derive a sub-section label like OHT-1 / OHT-2 / OHT-3 from a tag_id (e.g. "OHT1-LT"). */
+const getDisplaySection = (section: string, tagId: string): string => {
+  const sec = section.toLowerCase();
+  if (sec === 'oht') {
+    const m = tagId.match(/^OHT\s*([0-9]+)/i);
+    if (m) return `OHT-${m[1]}`;
+    return 'OHT';
+  }
+  return section.toUpperCase();
+};
+
+/** Sort priority: Intake (0) → WTP (1) → OHT-1 (2) → OHT-2 (3) → OHT-3 (4) … */
+const getSectionOrder = (section: string, tagId: string): number => {
+  const sec = section.toLowerCase();
+  if (sec === 'intake') return 0;
+  if (sec === 'wtp') return 1;
+  if (sec === 'oht') {
+    const m = tagId.match(/^OHT\s*([0-9]+)/i);
+    const n = m ? parseInt(m[1], 10) : 99;
+    return 1 + n; // OHT1 -> 2, OHT2 -> 3, OHT3 -> 4
+  }
+  return 99;
+};
 
 interface HistorianLog {
   id: string;
@@ -225,6 +265,7 @@ const HistoryPage: React.FC = () => {
     startedAt: number;
   }>({ open: false, phase: 'estimating', fetched: 0, total: 0, estSec: 0, startedAt: 0 });
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [exportInterval, setExportInterval] = useState<ExportInterval>('all');
   const autoRefreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const { toast } = useToast();
@@ -389,6 +430,34 @@ const HistoryPage: React.FC = () => {
       };
       await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()));
 
+      // Phase 3a: downsample by chosen interval (per-tag bucket = keep latest sample in bucket)
+      let processed: HistorianLog[] = allData.filter(Boolean);
+      if (exportInterval !== 'all') {
+        const bucketMs = INTERVAL_MS[exportInterval];
+        const latestByBucket = new Map<string, HistorianLog>();
+        for (const log of processed) {
+          const t = new Date(log.timestamp).getTime();
+          const bucket = Math.floor(t / bucketMs);
+          const key = `${log.tag_id}|${bucket}`;
+          const existing = latestByBucket.get(key);
+          if (!existing || new Date(existing.timestamp).getTime() < t) {
+            latestByBucket.set(key, log);
+          }
+        }
+        processed = Array.from(latestByBucket.values());
+      }
+
+      // Phase 3b: group sort — Intake → WTP → OHT-1 → OHT-2 → OHT-3, then tag, then time asc
+      processed.sort((a, b) => {
+        const oa = getSectionOrder(a.section, a.tag_id);
+        const ob = getSectionOrder(b.section, b.tag_id);
+        if (oa !== ob) return oa - ob;
+        if (a.tag_id !== b.tag_id) return a.tag_id.localeCompare(b.tag_id);
+        return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+      });
+
+      const exportCount = processed.length;
+
       // Phase 3: build workbook
       setExportProgress(p => ({ ...p, phase: 'building' }));
       const wb = new ExcelJS.Workbook();
@@ -423,6 +492,10 @@ const HistoryPage: React.FC = () => {
       const endStr = format(globalFilters.endDate, 'd MMM yyyy');
       const genStr = format(new Date(), 'd MMM yyyy HH:mm');
       infoCell.value = `📅 Period: ${startStr}  →  ${endStr}     📊 Records: ${totalCountVal.toLocaleString()}     🕒 Generated: ${genStr}`;
+      // Append interval note if downsampled
+      if (exportInterval !== 'all') {
+        infoCell.value = `📅 Period: ${startStr}  →  ${endStr}     📊 ${exportCount.toLocaleString()} of ${totalCountVal.toLocaleString()} records  •  Interval: ${INTERVAL_LABEL[exportInterval]}     🕒 Generated: ${genStr}`;
+      }
       infoCell.font = { name: 'Segoe UI', size: 11, bold: true, color: { argb: 'FF1F2937' } };
       infoCell.alignment = { horizontal: 'center', vertical: 'middle' };
       infoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF9C3' } };
@@ -461,7 +534,7 @@ const HistoryPage: React.FC = () => {
         wtp: 'FFB45309',
       };
 
-      allData.forEach((log, idx) => {
+      processed.forEach((log, idx) => {
         if (!log) return;
         const isPump = log.tag_id.includes('Pump');
         const label = log.tag_config?.label || log.tag_id;
@@ -481,7 +554,7 @@ const HistoryPage: React.FC = () => {
 
         const row = ws.addRow({
           ts: format(new Date(log.timestamp), 'yyyy-MM-dd HH:mm:ss'),
-          section: log.section.toUpperCase(),
+          section: getDisplaySection(log.section, log.tag_id),
           sensor: sensorType,
           label,
           value: valueOut,
@@ -521,7 +594,8 @@ const HistoryPage: React.FC = () => {
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `scada_history_${format(globalFilters.startDate!, 'yyyyMMdd')}_${format(globalFilters.endDate!, 'yyyyMMdd')}.xlsx`;
+      const intervalSuffix = exportInterval === 'all' ? '' : `_${exportInterval}`;
+      link.download = `scada_history_${format(globalFilters.startDate!, 'yyyyMMdd')}_${format(globalFilters.endDate!, 'yyyyMMdd')}${intervalSuffix}.xlsx`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -529,7 +603,7 @@ const HistoryPage: React.FC = () => {
 
       setExportProgress(p => ({ ...p, phase: 'done' }));
       setTimeout(() => setExportProgress(p => ({ ...p, open: false })), 1200);
-      toast({ title: 'Export Complete', description: `Exported ${totalCountVal.toLocaleString()} records to Excel.` });
+      toast({ title: 'Export Complete', description: `Exported ${exportCount.toLocaleString()} records to Excel${exportInterval !== 'all' ? ` (${INTERVAL_LABEL[exportInterval]})` : ''}.` });
     } catch (error) {
       logError('History.exportExcel', error);
       setExportProgress(p => ({ ...p, open: false }));
@@ -537,7 +611,7 @@ const HistoryPage: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [globalFilters.startDate, globalFilters.endDate, globalFilters.assets, getSectionFilters, getOhtTagPrefixes, toast, plantName]);
+  }, [globalFilters.startDate, globalFilters.endDate, globalFilters.assets, getSectionFilters, getOhtTagPrefixes, toast, plantName, exportInterval]);
 
   const paginationInfo = useMemo(() => {
     if (totalPages <= 1) return null;
@@ -586,6 +660,21 @@ const HistoryPage: React.FC = () => {
           >
             {isExporting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Exporting...</> : <><FileSpreadsheet className="mr-2 h-4 w-4" />Export Excel</>}
           </Button>
+          <div className="flex items-center gap-2 glass border border-border/40 px-3 py-1 rounded-xl shadow-sm">
+            <Label className="text-xs font-semibold text-muted-foreground whitespace-nowrap">Interval</Label>
+            <Select value={exportInterval} onValueChange={(v) => setExportInterval(v as ExportInterval)}>
+              <SelectTrigger className="h-8 w-[150px] border-0 bg-transparent text-sm font-semibold focus:ring-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All data</SelectItem>
+                <SelectItem value="1m">Every 1 minute</SelectItem>
+                <SelectItem value="30m">Every 30 minutes</SelectItem>
+                <SelectItem value="1h">Every 1 hour</SelectItem>
+                <SelectItem value="1d">Every 1 day</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-auto justify-center glass border border-border/40 px-3.5 py-1.5 rounded-xl shadow-sm">
             <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} disabled={totalCount === 0} />
             <Label htmlFor="auto-refresh" className={cn("flex items-center gap-2 cursor-pointer text-sm font-semibold select-none", autoRefresh ? "text-primary" : "text-muted-foreground")}>
