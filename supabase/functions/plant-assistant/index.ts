@@ -181,10 +181,41 @@ Deno.serve(async (req) => {
     const dataContext = {
       period: { from: fromCapped.toISOString().slice(0, 10), to: to.toISOString().slice(0, 10) },
       live_now: liveSnapshot || null,
+      today_summary: (() => {
+        const today = new Date().toISOString().slice(0, 10);
+        const rows = (consumption.data || []).filter((r: any) => r.date === today);
+        const bySection: Record<string, number> = {};
+        rows.forEach((r: any) => {
+          bySection[r.section] = (bySection[r.section] || 0) + Number(r.hourly_consumption || 0);
+        });
+        const total = Object.values(bySection).reduce((a, b) => a + b, 0);
+        return {
+          date: today,
+          window: "00:00 → now",
+          total_KL: Number(total.toFixed(2)),
+          by_section_KL: Object.fromEntries(Object.entries(bySection).map(([k, v]) => [k, Number(v.toFixed(2))])),
+          hours_with_data: rows.length,
+        };
+      })(),
+      yesterday_summary: (() => {
+        const y = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+        const rows = (consumption.data || []).filter((r: any) => r.date === y);
+        const bySection: Record<string, number> = {};
+        rows.forEach((r: any) => {
+          bySection[r.section] = (bySection[r.section] || 0) + Number(r.hourly_consumption || 0);
+        });
+        const total = Object.values(bySection).reduce((a, b) => a + b, 0);
+        return {
+          date: y,
+          total_KL: Number(total.toFixed(2)),
+          by_section_KL: Object.fromEntries(Object.entries(bySection).map(([k, v]) => [k, Number(v.toFixed(2))])),
+          hours_with_data: rows.length,
+        };
+      })(),
       consumption_total_KL_by_section: Object.fromEntries(
         Object.entries(consumptionBySection).map(([k, v]) => [k, Number(v.toFixed(2))])
       ),
-      consumption_recent: (consumption.data || []).slice(0, 50),
+      consumption_recent: (consumption.data || []).slice(0, 80),
       pump_summary: Object.fromEntries(
         Object.entries(pumpSummary).map(([k, v]) => [
           k,
