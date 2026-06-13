@@ -35,6 +35,46 @@ import { useToast } from '@/hooks/use-toast';
 import { logError } from '@/lib/errorLogger';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+type ExportInterval = 'all' | '1m' | '30m' | '1h' | '1d';
+const INTERVAL_MS: Record<Exclude<ExportInterval, 'all'>, number> = {
+  '1m': 60_000,
+  '30m': 30 * 60_000,
+  '1h': 60 * 60_000,
+  '1d': 24 * 60 * 60_000,
+};
+const INTERVAL_LABEL: Record<ExportInterval, string> = {
+  'all': 'All data',
+  '1m': 'Every 1 minute',
+  '30m': 'Every 30 minutes',
+  '1h': 'Every 1 hour',
+  '1d': 'Every 1 day',
+};
+
+/** Derive a sub-section label like OHT-1 / OHT-2 / OHT-3 from a tag_id (e.g. "OHT1-LT"). */
+const getDisplaySection = (section: string, tagId: string): string => {
+  const sec = section.toLowerCase();
+  if (sec === 'oht') {
+    const m = tagId.match(/^OHT\s*([0-9]+)/i);
+    if (m) return `OHT-${m[1]}`;
+    return 'OHT';
+  }
+  return section.toUpperCase();
+};
+
+/** Sort priority: Intake (0) → WTP (1) → OHT-1 (2) → OHT-2 (3) → OHT-3 (4) … */
+const getSectionOrder = (section: string, tagId: string): number => {
+  const sec = section.toLowerCase();
+  if (sec === 'intake') return 0;
+  if (sec === 'wtp') return 1;
+  if (sec === 'oht') {
+    const m = tagId.match(/^OHT\s*([0-9]+)/i);
+    const n = m ? parseInt(m[1], 10) : 99;
+    return 1 + n; // OHT1 -> 2, OHT2 -> 3, OHT3 -> 4
+  }
+  return 99;
+};
 
 interface HistorianLog {
   id: string;
