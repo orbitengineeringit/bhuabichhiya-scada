@@ -599,6 +599,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      refresh_consumption_from_historian: {
+        Args: { _from?: string; _to?: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "operator" | "viewer"
