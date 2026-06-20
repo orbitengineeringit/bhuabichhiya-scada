@@ -137,9 +137,26 @@ function topicSetup(cfg: MqttConfig | null) {
 }
 
 function normalizeBrokerUrl(url: string | null | undefined): string {
-  const raw = url || "wss://broker.emqx.io:8084/mqtt";
-  if (raw.startsWith("mqtt://")) return raw.replace("mqtt://", "ws://");
-  if (raw.startsWith("mqtts://")) return raw.replace("mqtts://", "wss://");
+  let raw = url || "mqtt://broker.hivemq.com:1883";
+  // For Deno backend, native TCP is much more reliable than WebSocket.
+  // Convert websocket URLs to standard TCP URLs.
+  if (raw.startsWith("wss://")) {
+    if (raw.includes("broker.hivemq.com")) {
+      return "mqtt://broker.hivemq.com:1883";
+    }
+    raw = raw.replace("wss://", "mqtts://");
+    if (raw.includes(":8084")) raw = raw.replace(":8084", ":8883");
+  } else if (raw.startsWith("ws://")) {
+    if (raw.includes("broker.hivemq.com")) {
+      return "mqtt://broker.hivemq.com:1883";
+    }
+    raw = raw.replace("ws://", "mqtt://");
+    if (raw.includes(":8083")) raw = raw.replace(":8083", ":1883");
+  }
+  // Strip websocket path suffix /mqtt if present in TCP URLs
+  if ((raw.startsWith("mqtt://") || raw.startsWith("mqtts://")) && raw.endsWith("/mqtt")) {
+    raw = raw.slice(0, -5);
+  }
   return raw;
 }
 
