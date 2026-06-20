@@ -18,6 +18,7 @@ export interface AlarmLog {
     emailSent: boolean;
     highSetpoint?: number;
     lowSetpoint?: number;
+    source?: 'browser' | 'backend:5min';
 }
 
 interface AlarmContextType {
@@ -34,6 +35,7 @@ const AlarmContext = createContext<AlarmContextType | undefined>(undefined);
 
 export const AlarmProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [alarms, setAlarms] = useState<AlarmLog[]>([]);
+    const recentAlarmKeys = React.useRef<Map<string, number>>(new Map());
 
     const unreadCount = alarms.filter(a => !a.acknowledged).length;
 
@@ -65,6 +67,7 @@ export const AlarmProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     section: a.section as 'intake' | 'oht' | 'wtp',
                     acknowledged: a.acknowledged,
                     emailSent: a.email_sent,
+                    source: a.source as 'browser' | 'backend:5min',
                 })));
             }
         } catch (error) {
@@ -99,6 +102,7 @@ export const AlarmProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         section: a.section as 'intake' | 'oht' | 'wtp',
                         acknowledged: a.acknowledged,
                         emailSent: a.email_sent,
+                        source: a.source as 'browser' | 'backend:5min',
                     }, ...prev].slice(0, 500));
                 }
             )
@@ -110,6 +114,12 @@ export const AlarmProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, [loadAlarms]);
 
     const addAlarm = useCallback(async (newAlarm: Omit<AlarmLog, 'id' | 'timestamp' | 'acknowledged' | 'emailSent'>) => {
+        const key = `${newAlarm.tagId}-${newAlarm.type}`;
+        const now = Date.now();
+        const lastFired = recentAlarmKeys.current.get(key) || 0;
+        if (now - lastFired < 10 * 60 * 1000) return; // skip duplicates in last 10 minutes
+        recentAlarmKeys.current.set(key, now);
+
         try {
             // Insert into database
             const { data, error } = await supabase
@@ -125,6 +135,7 @@ export const AlarmProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                     section: newAlarm.section,
                     acknowledged: false,
                     email_sent: false,
+                    source: 'browser',
                 })
                 .select()
                 .single();

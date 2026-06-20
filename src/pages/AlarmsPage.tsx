@@ -12,14 +12,21 @@ import { format, startOfDay, endOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 const AlarmsPage: React.FC = () => {
-    const { alarms, clearAlarms, acknowledgeAll } = useAlarm();
+    const { alarms, clearAlarms, acknowledgeAll, acknowledgeAlarm } = useAlarm();
     const [filter, setFilter] = useState<'all' | 'high' | 'low'>('all');
+    const [sectionFilter, setSectionFilter] = useState<'all' | 'intake' | 'wtp' | 'oht'>('all');
+    const [visibleCount, setVisibleCount] = useState(50);
     const [globalFilters, setGlobalFilters] = useState<GlobalFilters>({
       startDate: undefined,
       endDate: undefined,
       assets: ['all'],
       density: 'detailed',
     });
+
+    // Reset page pagination on filter change
+    useEffect(() => {
+        setVisibleCount(50);
+    }, [filter, sectionFilter, globalFilters]);
 
     const sectionFromAsset = (asset: AssetFilter): string[] => {
       if (asset === 'all') return [];
@@ -28,9 +35,22 @@ const AlarmsPage: React.FC = () => {
       return ['oht'];
     };
 
-    const displayedAlarms = useMemo(() => {
+    const stats = useMemo(() => {
+        const todayStart = startOfDay(new Date());
+        return {
+            today: alarms.filter(a => new Date(a.timestamp) >= todayStart).length,
+            unacknowledged: alarms.filter(a => !a.acknowledged).length,
+            high: alarms.filter(a => a.type === 'High').length,
+            low: alarms.filter(a => a.type === 'Low').length
+        };
+    }, [alarms]);
+
+    const { filteredAlarms, displayedAlarms } = useMemo(() => {
         const filtered = alarms.filter(alarm => {
             if (filter !== 'all' && alarm.type.toLowerCase() !== filter) return false;
+
+            // Section Filter Pill
+            if (sectionFilter !== 'all' && alarm.section !== sectionFilter) return false;
 
             // Asset filter
             if (!globalFilters.assets.includes('all')) {
@@ -51,9 +71,11 @@ const AlarmsPage: React.FC = () => {
             return true;
         });
 
-        const limit = globalFilters.density === 'fast' ? 20 : (globalFilters.density === 'analytical' ? 200 : 50);
-        return filtered.slice(0, limit);
-    }, [alarms, filter, globalFilters]);
+        return {
+            filteredAlarms: filtered,
+            displayedAlarms: filtered.slice(0, visibleCount),
+        };
+    }, [alarms, filter, sectionFilter, globalFilters, visibleCount]);
 
     const getAlarmIcon = (type: string) => {
         if (type === 'High') return <AlertTriangle className="h-4 w-4 text-destructive" />;
@@ -87,17 +109,75 @@ const AlarmsPage: React.FC = () => {
                         </Button>
                     </div>
                 </div>
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '50ms' }}>
+                    <Card className="bg-card/50 backdrop-blur border-border/60">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium">Today's Alarms</p>
+                                <h3 className="text-2xl font-bold mt-1 text-foreground">{stats.today}</h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-primary/10">
+                                <BellRing className="h-5 w-5 text-primary" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-card/50 backdrop-blur border-border/60">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium">Unacknowledged</p>
+                                <h3 className="text-2xl font-bold mt-1 text-destructive">{stats.unacknowledged}</h3>
+                            </div>
+                            <div className={cn("p-2.5 rounded-lg bg-destructive/10", stats.unacknowledged > 0 && "animate-pulse")}>
+                                <AlertCircle className="h-5 w-5 text-destructive" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-card/50 backdrop-blur border-border/60">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium">High Priority</p>
+                                <h3 className="text-2xl font-bold mt-1 text-destructive">{stats.high}</h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-destructive/10">
+                                <AlertTriangle className="h-5 w-5 text-destructive" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card className="bg-card/50 backdrop-blur border-border/60">
+                        <CardContent className="p-4 flex items-center justify-between">
+                            <div>
+                                <p className="text-xs text-muted-foreground font-medium">Low Priority</p>
+                                <h3 className="text-2xl font-bold mt-1 text-warning">{stats.low}</h3>
+                            </div>
+                            <div className="p-2.5 rounded-lg bg-warning/10">
+                                <AlertCircle className="h-5 w-5 text-warning" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Global Filter Bar */}
                 <GlobalFilterBar filters={globalFilters} onFiltersChange={setGlobalFilters} />
 
-                {/* Type Filters */}
-                <div className="flex gap-2 mb-4 opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
-                    <Button variant={filter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('all')}>All Alarms</Button>
-                    <Button variant={filter === 'high' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('high')}
-                        className={filter === 'high' ? 'bg-destructive hover:bg-destructive/90' : ''}>High Priority</Button>
-                    <Button variant={filter === 'low' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('low')}
-                        className={filter === 'low' ? 'bg-warning text-warning-foreground hover:bg-warning/90' : ''}>Low Priority</Button>
+                {/* Filter Groups */}
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 opacity-0 animate-fade-in" style={{ animationDelay: '100ms' }}>
+                    {/* Priority Filters */}
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant={filter === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('all')}>All Priorities</Button>
+                        <Button variant={filter === 'high' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('high')}
+                            className={filter === 'high' ? 'bg-destructive hover:bg-destructive/90 text-destructive-foreground font-medium' : ''}>High Priority</Button>
+                        <Button variant={filter === 'low' ? 'default' : 'outline'} size="sm" onClick={() => setFilter('low')}
+                            className={filter === 'low' ? 'bg-warning text-warning-foreground hover:bg-warning/90 font-medium' : ''}>Low Priority</Button>
+                    </div>
+
+                    {/* Section Filters */}
+                    <div className="flex flex-wrap gap-1.5 bg-muted/40 p-1 rounded-lg border border-border/40">
+                        <Button variant={sectionFilter === 'all' ? 'secondary' : 'ghost'} size="xs" onClick={() => setSectionFilter('all')} className="h-7 px-2.5 text-xs">All Sections</Button>
+                        <Button variant={sectionFilter === 'intake' ? 'secondary' : 'ghost'} size="xs" onClick={() => setSectionFilter('intake')} className="h-7 px-2.5 text-xs">Intake</Button>
+                        <Button variant={sectionFilter === 'wtp' ? 'secondary' : 'ghost'} size="xs" onClick={() => setSectionFilter('wtp')} className="h-7 px-2.5 text-xs">WTP</Button>
+                        <Button variant={sectionFilter === 'oht' ? 'secondary' : 'ghost'} size="xs" onClick={() => setSectionFilter('oht')} className="h-7 px-2.5 text-xs">OHTs</Button>
+                    </div>
                 </div>
 
                 {/* Alarms Table */}
@@ -127,8 +207,9 @@ const AlarmsPage: React.FC = () => {
                                                 <TableHead>Tag</TableHead>
                                                 <TableHead>Type</TableHead>
                                                 <TableHead>Value</TableHead>
-                                                <TableHead className="w-[40%]">Message</TableHead>
-                                                <TableHead className="text-right">Status</TableHead>
+                                                <TableHead className="w-[30%]">Message</TableHead>
+                                                <TableHead>Source</TableHead>
+                                                <TableHead className="text-right">Action/Status</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -155,11 +236,27 @@ const AlarmsPage: React.FC = () => {
                                                         {alarm.value.toFixed(2)} <span className="text-xs text-muted-foreground">{alarm.unit}</span>
                                                     </TableCell>
                                                     <TableCell className="text-sm">{alarm.message}</TableCell>
+                                                    <TableCell>
+                                                        {alarm.source === 'backend:5min' ? (
+                                                            <Badge variant="outline" className="bg-blue-500/5 text-blue-500 border-blue-500/20 gap-1 font-mono text-[10px] py-0.5">
+                                                                ⚙️ Backend
+                                                            </Badge>
+                                                        ) : (
+                                                            <Badge variant="outline" className="bg-purple-500/5 text-purple-500 border-purple-500/20 gap-1 font-mono text-[10px] py-0.5">
+                                                                🖥️ Browser
+                                                            </Badge>
+                                                        )}
+                                                    </TableCell>
                                                     <TableCell className="text-right">
                                                         {alarm.acknowledged ? (
-                                                            <Badge variant="outline" className="text-muted-foreground border-border">Ack</Badge>
+                                                            <Badge variant="outline" className="text-muted-foreground border-border">Acked</Badge>
                                                         ) : (
-                                                            <Badge variant="destructive" className="animate-pulse">Active</Badge>
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Badge variant="destructive" className="animate-pulse py-0.5 text-[10px]">Active</Badge>
+                                                                <Button variant="outline" size="sm" onClick={() => acknowledgeAlarm(alarm.id)} className="h-6 px-2 text-[10px] hover:bg-primary hover:text-primary-foreground transition-all">
+                                                                    Ack
+                                                                </Button>
+                                                            </div>
                                                         )}
                                                     </TableCell>
                                                 </TableRow>
@@ -167,6 +264,13 @@ const AlarmsPage: React.FC = () => {
                                         </TableBody>
                                     </Table>
                                 </div>
+                            </div>
+                        )}
+                        {filteredAlarms.length > visibleCount && (
+                            <div className="flex justify-center mt-6">
+                                <Button variant="outline" size="sm" onClick={() => setVisibleCount(prev => prev + 50)} className="w-full sm:w-auto font-medium">
+                                    Load More Alarms ({filteredAlarms.length - visibleCount} remaining)
+                                </Button>
                             </div>
                         )}
                     </CardContent>

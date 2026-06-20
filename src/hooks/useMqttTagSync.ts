@@ -1,7 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { MqttMessage } from '@/contexts/MqttContext';
-import type { TagData } from '@/contexts/ScadaContext';
+import { type TagData, getDefaultSetpoints } from '@/contexts/ScadaContext';
 import { toast } from 'sonner';
 import { useAlarm } from '@/contexts/AlarmContext';
 import { logError, logDebug, logWarn, logInfo } from '@/lib/errorLogger';
@@ -216,10 +216,11 @@ export const useMqttTagSync = (
       // PT overflow protection
       if (sensor.instrumentType === 'pt' && value > 1e30) { displayValue = 0; shouldLog = false; }
 
-      // Alarm check for analog sensors (uses operator setpoints if configured)
+      // Alarm check for analog sensors (uses operator setpoints or engineering defaults)
       if (existingTag && sensor.type === 'analog') {
-        const highThreshold = existingTag.highSetpoint ?? existingTag.max;
-        const lowThreshold = existingTag.lowSetpoint ?? existingTag.min;
+        const defaults = getDefaultSetpoints(sensor);
+        const highThreshold = existingTag.highSetpoint ?? defaults.high ?? existingTag.max;
+        const lowThreshold = existingTag.lowSetpoint ?? defaults.low ?? existingTag.min;
         const alarmEnabled = existingTag.alarmEnabled !== false;
         if (alarmEnabled && (displayValue > highThreshold || displayValue < lowThreshold)) {
           const type = displayValue > highThreshold ? 'High' : 'Low';
@@ -228,8 +229,9 @@ export const useMqttTagSync = (
           addAlarm({
             tagId: sensorId, tagConfigId: existingTag.dbId, label: existingTag.label,
             value: displayValue, unit: existingTag.unit, type, message: msg,
-            section: section as 'intake' | 'oht',
-            highSetpoint: existingTag.highSetpoint, lowSetpoint: existingTag.lowSetpoint,
+            section: section as 'intake' | 'oht' | 'wtp',
+            highSetpoint: existingTag.highSetpoint ?? (defaults.high !== null ? defaults.high : undefined),
+            lowSetpoint: existingTag.lowSetpoint ?? (defaults.low !== null ? defaults.low : undefined),
           });
         }
       }

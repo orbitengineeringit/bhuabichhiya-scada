@@ -7,7 +7,7 @@ import {
 } from '@/config/buaBicchiyaSensors';
 
 /** Get default setpoints based on instrument type and range */
-const getDefaultSetpoints = (sensor: BuaBicchiyaSensor): { high: number | null; low: number | null } => {
+export const getDefaultSetpoints = (sensor: BuaBicchiyaSensor): { high: number | null; low: number | null } => {
   switch (sensor.instrumentType) {
     case 'pt': // Pressure: high at 80% of max, low at 10% of max
       return { high: sensor.max * 0.8, low: sensor.max * 0.1 };
