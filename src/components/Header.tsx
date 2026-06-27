@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, memo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, History, BellRing, Settings, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, History, BellRing, FileSpreadsheet, Sun, Moon } from 'lucide-react';
 import { useAlarm } from '@/contexts/AlarmContext';
 import orbitLogo from '@/assets/orbit-logo-optimized.png';
 import { useAuth } from '@/contexts/AuthContext';
@@ -113,12 +113,12 @@ const Header = memo(forwardRef<HTMLElement>((_, ref) => {
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
-                <button onClick={() => navigate('/settings')}
+                <button onClick={() => navigate('/exports')}
                   className="p-1 sm:p-1.5 md:p-2.5 rounded-lg sm:rounded-xl bg-secondary/80 hover:bg-secondary text-foreground transition-all duration-200 hover:scale-105 active:scale-95">
-                  <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-[18px] md:w-[18px]" />
+                  <FileSpreadsheet className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-[18px] md:w-[18px]" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent><p>Settings</p></TooltipContent>
+              <TooltipContent><p>Data Exports</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>

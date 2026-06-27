@@ -1,12 +1,12 @@
 import React, { lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, ArrowLeft } from 'lucide-react';
+import { FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const DataExportSettings = lazy(() => import('@/components/DataExportSettings'));
 
-const SettingsPage: React.FC = () => {
+const ExportsPage: React.FC = () => {
   const navigate = useNavigate();
 
   return (
@@ -18,10 +18,10 @@ const SettingsPage: React.FC = () => {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              <Settings className="h-6 w-6 text-primary" />
-              Settings
+              <FileSpreadsheet className="h-6 w-6 text-primary" />
+              Data Exports
             </h1>
-            <p className="text-sm text-muted-foreground mt-1">Data export & retention settings</p>
+            <p className="text-sm text-muted-foreground mt-1">Automated reports & database retention logs</p>
           </div>
         </div>
 
@@ -33,4 +33,4 @@ const SettingsPage: React.FC = () => {
   );
 };
 
-export default SettingsPage;
+export default ExportsPage;

@@ -26,7 +26,7 @@ import WtpPage from "./pages/WtpPage";
 const HistoryPage = lazy(() => import("./pages/HistoryPage"));
 const AlarmsPage = lazy(() => import("./pages/AlarmsPage"));
 // MqttSettingsPage removed from client access for security
-const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const ExportsPage = lazy(() => import("./pages/ExportsPage"));
 const AssistantPage = lazy(() => import("./pages/AssistantPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -92,7 +92,7 @@ const AuthenticatedApp = () => (
               <Route path="/wtp" element={<WtpPage />} />
               <Route path="/history" element={<Suspense fallback={<PageSkeleton />}><HistoryPage /></Suspense>} />
               <Route path="/alarms" element={<Suspense fallback={<PageSkeleton />}><AlarmsPage /></Suspense>} />
-              <Route path="/settings" element={<Suspense fallback={<PageSkeleton />}><SettingsPage /></Suspense>} />
+              <Route path="/exports" element={<Suspense fallback={<PageSkeleton />}><ExportsPage /></Suspense>} />
               {/* <Route path="/assistant" element={<Suspense fallback={<PageSkeleton />}><AssistantPage /></Suspense>} /> */}
               
               {/* Analytics Routes */}

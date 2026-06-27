@@ -79,12 +79,9 @@ const DataExportSettings: React.FC = () => {
   const getStatusBadge = (exp: DataExport) => {
     const isExpired = new Date(exp.period_end).getTime() < Date.now() - 365 * 24 * 60 * 60 * 1000;
     if (exp.status === 'cleaned' || isExpired) {
-      return <Badge className="bg-success/20 text-success"><CheckCircle className="h-3 w-3 mr-1" />Cleaned</Badge>;
+      return <Badge className="bg-success/20 text-success border-success/30 font-medium"><CheckCircle className="h-3 w-3 mr-1" />Cleaned</Badge>;
     }
-    if (exp.downloaded || exp.email_sent) {
-      return <Badge className="bg-primary/20 text-primary"><Shield className="h-3 w-3 mr-1" />Confirmed</Badge>;
-    }
-    return <Badge className="bg-warning/20 text-warning"><Clock className="h-3 w-3 mr-1" />Pending</Badge>;
+    return <Badge className="bg-primary/20 text-primary border-primary/30 font-medium"><Shield className="h-3 w-3 mr-1" />Active</Badge>;
   };
 
   return (
@@ -139,35 +136,42 @@ const DataExportSettings: React.FC = () => {
                   <TableRow>
                     <TableHead>Period</TableHead>
                     <TableHead>Records</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Downloaded</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead></TableHead>
+                    <TableHead>Email Status</TableHead>
+                    <TableHead>DB Status</TableHead>
+                    <TableHead>Export Date</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {exports.map((exp) => (
-                    <TableRow key={exp.id}>
-                      <TableCell className="font-mono text-xs">
-                        {format(new Date(exp.period_start), 'dd/MM/yy')} — {format(new Date(exp.period_end), 'dd/MM/yy')}
-                      </TableCell>
-                      <TableCell className="font-bold">{exp.record_count.toLocaleString()}</TableCell>
-                      <TableCell>{getStatusBadge(exp)}</TableCell>
-                      <TableCell>{exp.email_sent ? '✅' : '❌'}</TableCell>
-                      <TableCell>{exp.downloaded ? '✅' : '❌'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {format(new Date(exp.created_at), 'dd/MM/yy HH:mm')}
-                      </TableCell>
-                      <TableCell>
-                        {exp.status !== 'cleaned' && exp.file_path && (
-                          <Button size="sm" variant="ghost" onClick={() => downloadExport(exp)}>
-                            <Download className="h-4 w-4" />
-                          </Button>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {exports.map((exp) => {
+                    const isExpired = new Date(exp.period_end).getTime() < Date.now() - 365 * 24 * 60 * 60 * 1000;
+                    return (
+                      <TableRow key={exp.id}>
+                        <TableCell className="font-mono text-xs">
+                          {format(new Date(exp.period_start), 'dd/MM/yy')} — {format(new Date(exp.period_end), 'dd/MM/yy')}
+                        </TableCell>
+                        <TableCell className="font-bold">{exp.record_count?.toLocaleString() || '0'}</TableCell>
+                        <TableCell>
+                          {exp.email_sent ? (
+                            <Badge className="bg-success/20 text-success border-success/30 font-medium">Sent</Badge>
+                          ) : (
+                            <Badge className="bg-warning/20 text-warning border-warning/30 font-medium">Pending</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(exp)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {format(new Date(exp.created_at), 'dd/MM/yy HH:mm')}
+                        </TableCell>
+                        <TableCell>
+                          {exp.status !== 'cleaned' && !isExpired && exp.file_path && (
+                            <Button size="sm" variant="ghost" onClick={() => downloadExport(exp)} className="h-8 w-8 p-0">
+                              <Download className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
