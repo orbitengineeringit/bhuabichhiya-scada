@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.scada-ingest]
 verify_jwt = false
+
+[functions.export-historian-data]
+verify_jwt = false

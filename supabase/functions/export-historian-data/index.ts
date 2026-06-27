@@ -1,15 +1,14 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.13";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version, x-cron-key',
 };
 
 const EXPORT_INTERVAL_DAYS = 90;
-const CLEANUP_GRACE_DAYS = 7;
 const RAW_RETENTION_DAYS = 7;
-// Supabase default max is 1000 rows per query
 const PAGE_SIZE = 1000;
 
 /**
@@ -47,38 +46,61 @@ async function fetchAllPaginated(
   return results;
 }
 
+/**
+ * Retrieves the shared cron secret for validating internal requests from pg_cron.
+ */
+async function getCronSecret(client: any): Promise<string | null> {
+  const { data, error } = await client
+    .from("gis_config")
+    .select("cron_secret")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error || !data?.cron_secret) {
+    console.error("getCronSecret failed:", error?.message);
+    return null;
+  }
+  return data.cron_secret as string;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Auth check
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    // --- Authentication & Authorization ---
+    // Allow either: (a) signed-in admin user OR (b) internal pg_cron call carrying x-cron-key
+    const cronKey = req.headers.get("x-cron-key");
+    const expectedCronKey = await getCronSecret(supabase);
+    const isCron = !!cronKey && !!expectedCronKey && cronKey === expectedCronKey;
+
+    if (!isCron) {
+      const authHeader = req.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      }
+
+      const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await userClient.auth.getUser();
+      if (userError || !user) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      }
+
+      // Admin role check — destructive operations must be admin-only
+      const { data: isAdmin } = await userClient.rpc('has_role', { _user_id: user.id, _role: 'admin' });
+      if (!isAdmin) {
+        return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
-
-    // Admin role check — destructive operations must be admin-only
-    const { data: isAdmin } = await userClient.rpc('has_role', { _user_id: user.id, _role: 'admin' });
-    if (!isAdmin) {
-      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Use service role for data operations
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
 
     let body: any = {};
     try { body = await req.json(); } catch {}
@@ -155,7 +177,7 @@ serve(async (req) => {
           );
           console.log(`[export] Fetched ${allAggregates.length} aggregate rows`);
 
-          // 2) Fetch ALL pump analytics data (daily summaries — NOT from historian_logs which gets deleted)
+          // 2) Fetch ALL pump analytics data (daily summaries)
           const allPumpAnalytics = await fetchAllPaginated(
             supabase,
             'pump_analytics',
@@ -234,7 +256,7 @@ serve(async (req) => {
               .select('id')
               .single();
 
-            // Send email notification
+            // Send email notification via Gmail SMTP
             const { data: plantConfig } = await supabase.from('plant_config').select('plant_name').limit(1).maybeSingle();
             const { data: recipientRows } = await supabase
               .from('notification_recipients')
@@ -242,49 +264,78 @@ serve(async (req) => {
               .eq('scope', 'export');
             const emails: string[] = (recipientRows || []).map((r: any) => r.email);
             const plantName = (plantConfig as any)?.plant_name || 'Bhua Bicchiya SCADA';
-            const resendApiKey = Deno.env.get('RESEND_API_KEY');
+
+            const smtpUser = Deno.env.get('SMTP_USER');
+            const smtpPass = Deno.env.get('SMTP_PASSWORD');
             let emailSent = false;
 
-            if (resendApiKey && emails.length > 0 && downloadUrl) {
-              const emailResponse = await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  from: `${plantName} <info@orbitengineerings.com>`,
-                  to: emails.slice(0, 10),
-                  subject: `📊 ${plantName} - Data Export (${startStr} to ${endStr})`,
-                  html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-                    <body style="margin:0;padding:0;font-family:'Segoe UI',sans-serif;background:#f3f4f6;">
-                      <div style="max-width:600px;margin:0 auto;background:#fff;">
-                        <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:30px 25px;text-align:center;">
-                          <h1 style="margin:0 0 10px;font-size:24px;">📊 Data Export Report</h1>
-                          <p style="margin:0;font-size:16px;">${plantName}</p>
-                        </div>
-                        <div style="padding:25px;">
-                          <p><strong>Period:</strong> ${startStr} to ${endStr}</p>
-                          <p><strong>Total Records:</strong> ${totalRecords.toLocaleString()}</p>
-                          <ul style="margin:10px 0;padding-left:20px;font-size:14px;">
-                            <li>Sensor Aggregates: ${allAggregates.length.toLocaleString()}</li>
-                            <li>Pump Analytics: ${allPumpAnalytics.length.toLocaleString()}</li>
-                            <li>Consumption Data: ${allConsumption.length.toLocaleString()}</li>
-                          </ul>
-                          <div style="margin-top:25px;text-align:center;">
-                            <a href="${downloadUrl}" style="display:inline-block;padding:14px 30px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;text-decoration:none;border-radius:8px;font-weight:600;">⬇️ Download CSV</a>
-                          </div>
-                          <p style="margin-top:15px;font-size:12px;color:#9ca3af;text-align:center;">Link valid for 30 days.</p>
-                        </div>
-                      </div>
-                    </body></html>`,
-                }),
+            if (smtpUser && smtpPass && emails.length > 0 && downloadUrl) {
+              console.log(`[export] Preparing to send SMTP mail to: ${emails.join(', ')}`);
+              
+              const transporter = nodemailer.createTransport({
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
+                auth: {
+                  user: smtpUser,
+                  pass: smtpPass,
+                },
               });
 
-              emailSent = emailResponse.ok;
-              if (!emailSent) {
-                console.error('[export] Email send failed:', await emailResponse.text());
+              const mailOptions = {
+                from: `"${plantName}" <${smtpUser}>`,
+                to: emails.slice(0, 10).join(', '),
+                subject: `📊 ${plantName} - Data Export (${startStr} to ${endStr})`,
+                html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+                  <body style="margin:0;padding:0;font-family:'Segoe UI',sans-serif;background:#f3f4f6;">
+                    <div style="max-width:600px;margin:0 auto;background:#fff;box-shadow:0 4px 6px rgba(0,0,0,0.1);border-radius:8px;overflow:hidden;margin-top:20px;">
+                      <div style="background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;padding:35px 25px;text-align:center;">
+                        <h1 style="margin:0 0 10px;font-size:24px;font-weight:700;">📊 Data Export Report</h1>
+                        <p style="margin:0;font-size:16px;opacity:0.9;">${plantName}</p>
+                      </div>
+                      <div style="padding:25px;color:#374151;">
+                        <h3 style="margin-top:0;color:#1e40af;font-size:18px;">Export Details</h3>
+                        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                          <tr>
+                            <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#4b5563;">Period</td>
+                            <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right;">${startStr} to ${endStr}</td>
+                          </tr>
+                          <tr>
+                            <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;font-weight:600;color:#4b5563;">Total Records</td>
+                            <td style="padding:8px 0;border-bottom:1px solid #e5e7eb;text-align:right;font-weight:700;">${totalRecords.toLocaleString()}</td>
+                          </tr>
+                        </table>
+                        <ul style="margin:10px 0 25px;padding-left:20px;font-size:14px;color:#6b7280;line-height:1.6;">
+                          <li>Sensor Aggregates: ${allAggregates.length.toLocaleString()}</li>
+                          <li>Pump Analytics: ${allPumpAnalytics.length.toLocaleString()}</li>
+                          <li>Consumption Data: ${allConsumption.length.toLocaleString()}</li>
+                        </ul>
+                        <div style="margin:30px 0;text-align:center;">
+                          <a href="${downloadUrl}" style="display:inline-block;padding:14px 30px;background:linear-gradient(135deg,#1e40af,#3b82f6);color:white;text-decoration:none;border-radius:8px;font-weight:600;box-shadow:0 2px 4px rgba(59,130,246,0.3);">⬇️ Download CSV Report</a>
+                        </div>
+                        <p style="font-size:12px;color:#9ca3af;text-align:center;">This download link is valid for 30 days.</p>
+                      </div>
+                      <div style="background:#1f2937;color:#9ca3af;padding:20px 25px;text-align:center;font-size:12px;">
+                        <p style="margin:0 0 5px;color:#ffffff;font-weight:600;">${plantName}</p>
+                        <p style="margin:0;">Powered by Orbit Engineering Group</p>
+                        <p style="margin:10px 0 0;font-size:11px;opacity:0.6;">Automated email. Please do not reply.</p>
+                      </div>
+                    </div>
+                  </body></html>`,
+              };
+
+              try {
+                const info = await transporter.sendMail(mailOptions);
+                console.log('[export] Email sent via SMTP:', info.messageId);
+                emailSent = true;
+                if (exportRecord?.id) {
+                  await supabase.from('data_exports').update({ email_sent: true }).eq('id', exportRecord.id);
+                }
+              } catch (mailErr) {
+                console.error('[export] SMTP send failed:', mailErr);
               }
-              if (emailSent && exportRecord?.id) {
-                await supabase.from('data_exports').update({ email_sent: true }).eq('id', exportRecord.id);
-              }
+            } else {
+              console.warn('[export] SMTP credentials or recipients missing. SMTP_USER configured:', !!smtpUser);
             }
 
             results.steps.push({
@@ -307,50 +358,61 @@ serve(async (req) => {
       }
     }
 
-    // ===== STEP 3: Cleanup exported aggregates =====
-    if (action === 'daily_check' || action === 'cleanup_exported') {
-      const graceCutoff = new Date(Date.now() - CLEANUP_GRACE_DAYS * 24 * 60 * 60 * 1000).toISOString();
+    // ===== STEP 3: Monthly rolling block cleanup (1-year retention) =====
+    if (action === 'daily_check' || action === 'cleanup_expired') {
+      try {
+        // Calculate the cutoff date (start of the current month minus 12 months)
+        // Anything before this cutoff will be deleted in monthly blocks.
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const cutoffDate = new Date(startOfCurrentMonth);
+        cutoffDate.setMonth(cutoffDate.getMonth() - 12);
+        const cutoffStr = cutoffDate.toISOString(); // e.g. "2025-06-01T00:00:00.000Z"
+        const cutoffDateOnly = cutoffStr.split('T')[0]; // "2025-06-01"
 
-      const { data: confirmedExports } = await supabase
-        .from('data_exports')
-        .select('*')
-        .eq('cleanup_done', false)
-        .eq('status', 'exported')
-        .lt('created_at', graceCutoff)
-        .or('email_sent.eq.true,downloaded.eq.true');
+        console.log(`[cleanup] Running 1-year rolling monthly cleanup. Cutoff: ${cutoffStr}`);
 
-      for (const exp of confirmedExports || []) {
-        // Delete aggregates for this period
-        const { error } = await supabase
+        // 1. Delete aggregates
+        const { error: aggErr } = await supabase
           .from('historian_aggregates')
           .delete()
-          .gte('bucket_start', exp.period_start)
-          .lt('bucket_start', exp.period_end);
+          .lt('bucket_start', cutoffStr);
+        if (aggErr) throw aggErr;
 
-        if (!error) {
-          await supabase.from('data_exports').update({
-            cleanup_done: true,
-            status: 'cleaned',
-            updated_at: new Date().toISOString(),
-          }).eq('id', exp.id);
-          results.steps.push({ step: 'cleanup_exported', export_id: exp.id, status: 'cleaned' });
-        } else {
-          results.steps.push({ step: 'cleanup_exported', export_id: exp.id, error: error.message });
-        }
-      }
+        // 2. Delete alarms
+        const { error: alarmErr } = await supabase
+          .from('alarms')
+          .delete()
+          .lt('created_at', cutoffStr);
+        if (alarmErr) throw alarmErr;
 
-      // Safety: warn about unconfirmed exports
-      const { data: unconfirmed } = await supabase
-        .from('data_exports')
-        .select('id')
-        .eq('cleanup_done', false)
-        .eq('status', 'exported')
-        .eq('email_sent', false)
-        .eq('downloaded', false)
-        .lt('created_at', graceCutoff);
+        // 3. Delete pump analytics
+        const { error: pumpErr } = await supabase
+          .from('pump_analytics')
+          .delete()
+          .lt('date', cutoffDateOnly);
+        if (pumpErr) throw pumpErr;
 
-      if (unconfirmed && unconfirmed.length > 0) {
-        results.steps.push({ step: 'safety_hold', message: `${unconfirmed.length} exports not confirmed — data preserved` });
+        // 4. Delete consumption data
+        const { error: consErr } = await supabase
+          .from('consumption_data')
+          .delete()
+          .lt('date', cutoffDateOnly);
+        if (consErr) throw consErr;
+
+        results.steps.push({
+          step: 'cleanup_expired',
+          cutoff: cutoffStr,
+          status: 'success',
+          message: 'Data older than 1 year deleted successfully',
+        });
+      } catch (err: any) {
+        console.error('[cleanup] 1-year rolling cleanup failed:', err.message);
+        results.steps.push({
+          step: 'cleanup_expired',
+          status: 'failed',
+          error: err.message,
+        });
       }
     }
 
@@ -364,7 +426,7 @@ serve(async (req) => {
       if (!exportRecord) {
         return new Response(JSON.stringify({ error: 'Export not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      await supabase.from('data_exports').update({ downloaded: true, updated_at: new Date().toISOString() }).eq('id', body.exportId);
+      await supabase.from('data_exports').update({ downloaded: true }).eq('id', body.exportId);
       results.steps.push({ step: 'mark_downloaded', exportId: body.exportId });
     }
 

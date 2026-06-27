@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import nodemailer from "npm:nodemailer@6.9.13";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -126,9 +127,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     await supabase.from('alarms').update({ email_sent: true, email_sent_at: new Date().toISOString() }).eq('id', alarmData.alarmId);
 
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    if (!resendApiKey) {
-      return new Response(JSON.stringify({ success: false, message: 'RESEND_API_KEY not configured' }), {
+    const smtpUser = Deno.env.get('SMTP_USER');
+    const smtpPass = Deno.env.get('SMTP_PASSWORD');
+
+    if (!smtpUser || !smtpPass) {
+      return new Response(JSON.stringify({ success: false, message: 'SMTP_USER or SMTP_PASSWORD not configured' }), {
         status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -154,53 +157,57 @@ const handler = async (req: Request): Promise<Response> => {
       setpointInfo = `<tr><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;width:40%;">Low Setpoint</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#f59e0b;font-weight:600;">${Number(alarmData.lowSetpoint).toFixed(2)} ${safeUnit}</td></tr>`;
     }
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${resendApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        from: `${plantName} Alerts <info@orbitengineerings.com>`,
-        to: recipientEmails,
-        subject: `🚨 ${alarmColor.text}: ${safeLabel} - ${plantName}`,
-        html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-          <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f3f4f6;">
-            <div style="max-width:600px;margin:0 auto;background:#ffffff;box-shadow:0 4px 6px rgba(0,0,0,0.1);">
-              <div style="background:linear-gradient(135deg,${alarmColor.bg} 0%,${alarmColor.bg}dd 100%);color:white;padding:30px 25px;text-align:center;">
-                <h1 style="margin:0 0 10px;font-size:28px;font-weight:700;">⚠️ ${alarmColor.text}</h1>
-                <p style="margin:0;font-size:16px;opacity:0.9;">${plantName}</p>
-              </div>
-              <div style="background-color:#1f2937;color:white;padding:20px 25px;">
-                <div><p style="margin:0 0 5px;font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Tag Name</p><p style="margin:0;font-size:22px;font-weight:600;">${safeLabel}</p></div>
-                <div style="text-align:right;margin-top:10px;"><p style="margin:0 0 5px;font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Current Value</p><p style="margin:0;font-size:28px;font-weight:700;color:${alarmColor.bg};">${safeValue} ${safeUnit}</p></div>
-              </div>
-              <div style="padding:25px;">
-                <table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
-                  <tr style="background:#f9fafb;"><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;width:40%;">Tag ID</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-family:monospace;">${safeTagId}</td></tr>
-                  <tr><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Section</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;text-transform:uppercase;">${safeSection}</td></tr>
-                  <tr style="background:#f9fafb;"><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Alarm Type</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;"><span style="background-color:${alarmColor.bg};color:white;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;">${escapeHtml(alarmRecord.alarm_type).toUpperCase()}</span></td></tr>
-                  ${setpointInfo}
-                  <tr><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Timestamp</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${formattedTime}</td></tr>
-                </table>
-                <div style="margin-top:20px;padding:15px 20px;background-color:#fef2f2;border-left:4px solid ${alarmColor.bg};border-radius:0 8px 8px 0;">
-                  <p style="margin:0 0 5px;font-weight:600;color:#991b1b;font-size:14px;">Alert Message</p>
-                  <p style="margin:0;color:#7f1d1d;font-size:15px;">${safeMessage}</p>
-                </div>
-              </div>
-              <div style="background:#1f2937;color:#9ca3af;padding:20px 25px;text-align:center;">
-                <p style="margin:0 0 5px;font-size:14px;color:#ffffff;">${plantName}</p>
-                <p style="margin:0;font-size:12px;">Powered by Orbit Engineering Group</p>
-                <p style="margin:10px 0 0;font-size:11px;opacity:0.7;">Automated alert. Do not reply.</p>
-              </div>
-            </div>
-          </body></html>`,
-      }),
+    const transporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
     });
 
-    const emailResult = await emailResponse.json();
-    if (!emailResponse.ok) {
-      return new Response(JSON.stringify({ success: false, error: emailResult }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+    const mailOptions = {
+      from: `"${plantName} Alerts" <${smtpUser}>`,
+      to: recipientEmails.join(', '),
+      subject: `🚨 ${alarmColor.text}: ${safeLabel} - ${plantName}`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+        <body style="margin:0;padding:0;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background-color:#f3f4f6;">
+          <div style="max-width:600px;margin:0 auto;background:#ffffff;box-shadow:0 4px 6px rgba(0,0,0,0.1);border-radius:8px;overflow:hidden;margin-top:20px;">
+            <div style="background:linear-gradient(135deg,${alarmColor.bg} 0%,${alarmColor.bg}dd 100%);color:white;padding:30px 25px;text-align:center;">
+              <h1 style="margin:0 0 10px;font-size:28px;font-weight:700;">⚠️ ${alarmColor.text}</h1>
+              <p style="margin:0;font-size:16px;opacity:0.9;">${plantName}</p>
+            </div>
+            <div style="background-color:#1f2937;color:white;padding:20px 25px;">
+              <div><p style="margin:0 0 5px;font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Tag Name</p><p style="margin:0;font-size:22px;font-weight:600;">${safeLabel}</p></div>
+              <div style="text-align:right;margin-top:10px;"><p style="margin:0 0 5px;font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.7;">Current Value</p><p style="margin:0;font-size:28px;font-weight:700;color:${alarmColor.bg};">${safeValue} ${safeUnit}</p></div>
+            </div>
+            <div style="padding:25px;">
+              <table style="width:100%;border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid #e5e7eb;">
+                <tr style="background:#f9fafb;"><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;width:40%;">Tag ID</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-family:monospace;">${safeTagId}</td></tr>
+                <tr><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Section</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;text-transform:uppercase;">${safeSection}</td></tr>
+                <tr style="background:#f9fafb;"><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Alarm Type</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;"><span style="background-color:${alarmColor.bg};color:white;padding:4px 10px;border-radius:4px;font-size:12px;font-weight:600;">${escapeHtml(alarmRecord.alarm_type).toUpperCase()}</span></td></tr>
+                ${setpointInfo}
+                <tr><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;font-weight:600;color:#374151;">Timestamp</td><td style="padding:12px 15px;border-bottom:1px solid #e5e7eb;color:#6b7280;">${formattedTime}</td></tr>
+              </table>
+              <div style="margin-top:20px;padding:15px 20px;background-color:#fef2f2;border-left:4px solid ${alarmColor.bg};border-radius:0 8px 8px 0;">
+                <p style="margin:0 0 5px;font-weight:600;color:#991b1b;font-size:14px;">Alert Message</p>
+                <p style="margin:0;color:#7f1d1d;font-size:15px;">${safeMessage}</p>
+              </div>
+            </div>
+            <div style="background:#1f2937;color:#9ca3af;padding:20px 25px;text-align:center;">
+              <p style="margin:0 0 5px;font-size:14px;color:#ffffff;">${plantName}</p>
+              <p style="margin:0;font-size:12px;">Powered by Orbit Engineering Group</p>
+              <p style="margin:10px 0 0;font-size:11px;opacity:0.7;">Automated alert. Do not reply to this email.</p>
+            </div>
+          </div>
+        </body></html>`,
+    };
 
-    return new Response(JSON.stringify({ success: true, message: 'Email sent', emailId: emailResult.id }), {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('[send-alarm-email] Alarm Email sent successfully:', info.messageId);
+
+    return new Response(JSON.stringify({ success: true, message: 'Email sent', emailId: info.messageId }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (error: unknown) {
