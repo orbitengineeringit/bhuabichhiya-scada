@@ -76,6 +76,8 @@ export const useMqttTagSync = (
   const levelHistory = useRef<Map<string, { value: number; timestamp: number }[]>>(new Map());
   // Level trend tracker for Mass Balance check: tagId -> { startLevel: number; timestamp: number }
   const massBalanceTracker = useRef<Map<string, { startLevel: number; timestamp: number }>>(new Map());
+  // Pump start times tracker for short cycling watchdog: pumpId -> startTimestamps[]
+  const pumpStartHistory = useRef<Map<string, number[]>>(new Map());
 
   // Helper to determine if pressure alarm should be suppressed due to no flow
   const isPressureSuppressed = (sensorId: string, currentTags: TagData[]): boolean => {
@@ -427,11 +429,98 @@ export const useMqttTagSync = (
         }
       }
 
+      // --- 6. Derived Status Multi-Sensor Correction (DSMC) ---
+      let pumpValue = sensor.instrumentType === 'pt' ? (displayValue > 1.5 ? 1 : 0) : null;
+      
+      if (sensor.instrumentType === 'pt' && pumpValue === 0) {
+        // DSMC Rule 1: Flow-based status correction (If PT reads 0 but flow is active, override pump status to ON)
+        let isFlowActive = false;
+        if (section === 'intake') {
+          const intakeFlow = latestValues.get('INT-Flow') || 0;
+          const wtpFlowIn = latestValues.get('WTP-Flow-IN') || 0;
+          isFlowActive = intakeFlow > 10.0 || wtpFlowIn > 10.0;
+        } else if (section === 'wtp') {
+          const wtpFlowIn = latestValues.get('WTP-Flow-IN') || 0;
+          const intakeFlow = latestValues.get('INT-Flow') || 0;
+          isFlowActive = wtpFlowIn > 10.0 || intakeFlow > 10.0;
+        }
+
+        if (isFlowActive) {
+          const otherPtId = sensorId === 'INT-PT1' ? 'INT-PT2' : 
+                             sensorId === 'INT-PT2' ? 'INT-PT1' : 
+                             sensorId === 'WTP-PT1' ? 'WTP-PT2' : 
+                             sensorId === 'WTP-PT2' ? 'WTP-PT1' : null;
+          const otherPtVal = otherPtId ? (latestValues.get(otherPtId) || 0) : 0;
+          
+          if (otherPtVal <= 1.5) {
+            pumpValue = 1; // Force ON
+            const pumpId = PT_TO_PUMP_MAP[sensorId];
+            if (pumpId) {
+              const corrKey = `${pumpId}-StatusCorrection`;
+              const corrStart = alarmActiveSince.current.get(corrKey);
+              if (!corrStart) {
+                alarmActiveSince.current.set(corrKey, nowTime);
+                const msg = `Status Correction: ${pumpId} display status forced to ON (Flow is active, but pump pressure reads ${displayValue.toFixed(2)} Bar)`;
+                addAlarm({
+                  tagId: pumpId, tagConfigId: existingTag?.dbId, label: pumpId,
+                  value: 1, unit: '', type: 'High', message: msg,
+                  section: section as 'intake' | 'wtp',
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // DSMC Rule 2: Power-based status correction (If WTP power < 2.0 kW, WTP pumps are OFF regardless of PT)
+      if (sensor.instrumentType === 'pt' && pumpValue === 1 && section === 'wtp') {
+        const kwTag = tags.find(t => t.id === 'WTP-KW');
+        const kwVal = latestValues.get('WTP-KW') || 0;
+        const isKwHealthy = kwTag && kwTag.status === 'connected' && !kwTag.notInstalled;
+        if (isKwHealthy && kwVal < 2.0) {
+          pumpValue = 0; // Force OFF
+          const pumpId = PT_TO_PUMP_MAP[sensorId];
+          if (pumpId) {
+            alarmActiveSince.current.delete(`${pumpId}-DryRun`);
+            alarmActiveSince.current.delete(`${pumpId}-Efficiency`);
+          }
+        }
+      }
+
+      // --- 7. Pump Motor Short Cycling Watchdog (MCC Rule 2) ---
+      const pumpId = PT_TO_PUMP_MAP[sensorId];
+      if (pumpId && pumpValue !== null) {
+        const prevPumpTag = tags.find(t => t.id === pumpId);
+        const prevPumpValue = prevPumpTag ? prevPumpTag.value : 0;
+
+        if (prevPumpValue === 0 && pumpValue === 1) {
+          // Transitioned from OFF to ON! Log start transition timestamp
+          let starts = pumpStartHistory.current.get(pumpId) || [];
+          starts.push(nowTime);
+          // Keep only starts in the last 10 minutes
+          starts = starts.filter(t => nowTime - t <= 10 * 60 * 1000);
+          pumpStartHistory.current.set(pumpId, starts);
+          
+          if (starts.length > 5) {
+            const cycleKey = `${pumpId}-ShortCycling`;
+            const cycleStart = alarmActiveSince.current.get(cycleKey);
+            if (!cycleStart) {
+              alarmActiveSince.current.set(cycleKey, nowTime);
+              const msg = `Mechanical Fault: Pump Short Cycling detected on ${pumpId} (Pump started ${starts.length} times in 10 minutes. Check valve leakage or level setpoint overlap suspected)`;
+              addAlarm({
+                tagId: pumpId, tagConfigId: prevPumpTag?.dbId, label: pumpId,
+                value: starts.length, unit: 'starts', type: 'High', message: msg,
+                section: section as 'intake' | 'wtp',
+              });
+            }
+          }
+        } else if (pumpValue === 0) {
+          alarmActiveSince.current.delete(`${pumpId}-ShortCycling`);
+        }
+      }
+
       // Update local state atomically
       setter(prev => {
-        const pumpId = PT_TO_PUMP_MAP[sensorId];
-        const pumpValue = sensor.instrumentType === 'pt' ? (displayValue > 1.5 ? 1 : 0) : null;
-
         return prev.map(t => {
           if (t.id === sensorId) {
             return {
@@ -439,9 +528,9 @@ export const useMqttTagSync = (
               mqttTopic: topic, isActive: true, lastDataTime: new Date(), status: 'connected' as const
             };
           }
-          if (pumpId && t.id === pumpId) {
+          if (pumpId && t.id === pumpId && pumpValue !== null) {
             return {
-              ...t, value: pumpValue!, timestamp: new Date(), source: 'mqtt' as const,
+              ...t, value: pumpValue, timestamp: new Date(), source: 'mqtt' as const,
               mqttTopic: topic, isActive: true, lastDataTime: new Date(), status: 'connected' as const
             };
           }
@@ -479,8 +568,43 @@ export const useMqttTagSync = (
     }
 
     // ==========================================
-    // --- 6. Multi-Instrument Cross-Validation (MIV & Ultra-MIV) ---
+    // --- 8. Multi-Instrument Cross-Validation (MIV & Ultra-MIV) ---
     // ==========================================
+
+    // -- MCC Watchdog Rule 1: Pump Duty-Standby Overload Alert --
+    const checkDutyStandbyOverload = (p1Id: string, p2Id: string, secName: 'intake' | 'wtp') => {
+      let p1Val = latestValues.get(p1Id);
+      let p2Val = latestValues.get(p2Id);
+      if (p1Val === undefined) p1Val = tags.find(t => t.id === p1Id)?.value || 0;
+      if (p2Val === undefined) p2Val = tags.find(t => t.id === p2Id)?.value || 0;
+      
+      const isP1On = p1Val === 1;
+      const isP2On = p2Val === 1;
+
+      if (isP1On && isP2On) {
+        const overloadKey = `${secName}-PumpOverload`;
+        const overloadStart = alarmActiveSince.current.get(overloadKey);
+        if (!overloadStart) {
+          alarmActiveSince.current.set(overloadKey, nowTime);
+        } else if (nowTime - overloadStart > 300000) { // 5 minutes
+          const t1 = tags.find(t => t.id === p1Id);
+          const msg = `Process Warning: Pump Duty-Standby Overload (Both ${p1Id} and ${p2Id} are running simultaneously in ${secName}. Stuck MCC contactor or manual override suspected)`;
+          addAlarm({
+            tagId: p1Id, tagConfigId: t1?.dbId, label: 'Pump Overload',
+            value: 2, unit: 'pumps', type: 'High', message: msg,
+            section: secName,
+          });
+        }
+      } else {
+        alarmActiveSince.current.delete(`${secName}-PumpOverload`);
+      }
+    };
+
+    if (section === 'intake') {
+      checkDutyStandbyOverload('INT-Pump1', 'INT-Pump2', 'intake');
+    } else if (section === 'wtp') {
+      checkDutyStandbyOverload('WTP-Pump1', 'WTP-Pump2', 'wtp');
+    }
 
     // -- Ultra-MIV Rule 1: Pump Cavitation / Air Lock Check --
     const checkCavitation = (ptId: string) => {
