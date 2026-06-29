@@ -676,7 +676,7 @@ const HistoryPage: React.FC = () => {
             <Database className="h-5 w-5 sm:h-6 sm:w-6 text-primary animate-pulse" />
           </div>
           <div className="min-w-0">
-            <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-shadow-glow">Historical Telemetry</h2>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-foreground bg-gradient-to-r from-foreground via-foreground/90 to-muted-foreground bg-clip-text text-shadow-glow">Historical Record</h2>
           </div>
         </div>
 

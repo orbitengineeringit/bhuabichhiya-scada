@@ -95,7 +95,7 @@ const Header = memo(forwardRef<HTMLElement>((_, ref) => {
                   <History className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-[18px] md:w-[18px]" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent><p>History</p></TooltipContent>
+              <TooltipContent><p>Historical Record</p></TooltipContent>
             </Tooltip>
             <Tooltip>
               <TooltipTrigger asChild>
