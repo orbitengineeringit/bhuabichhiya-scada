@@ -128,7 +128,28 @@ function parsePayload(payload: string): Record<string, string | number>[] {
         results.push({ [String(parsed[tagKey])]: parsed[valKey] });
         return results;
       }
+
+      // Handle nested equipment_data (Bhua Bicchiya OHT RTU cellular packet format)
+      let equipmentData = (parsed as any).equipment_data;
+      if (typeof equipmentData === "string") {
+        try { equipmentData = JSON.parse(equipmentData); } catch {}
+      }
+      if (typeof equipmentData === "object" && equipmentData !== null) {
+        Object.entries(equipmentData).forEach(([k, v]) => {
+          const raw = typeof v === "object" && v !== null && "value" in v ? (v as any).value : v;
+          const num = typeof raw === "string" ? parseFloat(raw) : raw;
+          const finalVal = typeof num === "number" && !isNaN(num) ? num : (raw as any);
+          results.push({ [k]: finalVal });
+          const upper = k.toUpperCase();
+          if (upper === "LT") results.push({ LEVEL: finalVal });
+          if (upper === "PT") results.push({ PT_01: finalVal });
+          if (upper === "FLOW_TOTALIZER") results.push({ TOTALIZER: finalVal });
+          if (upper === "FLOW") results.push({ FLOW_IN: finalVal });
+        });
+      }
+
       Object.entries(parsed).forEach(([key, value]) => {
+        if (key === "equipment_data") return;
         results.push({ [key]: typeof value === "object" && value !== null && "value" in value ? (value as any).value : value as any });
       });
     } else if (Array.isArray(parsed)) {
@@ -272,8 +293,16 @@ Deno.serve(async (req) => {
     for (const msg of messages) {
       if (msg.section === "unknown") continue;
       const sensors = SENSORS.filter(s => s.section === msg.section && (!s.subsection || s.subsection === msg.subsection) && s.mqttKey);
-      for (const [mqttKey, rawValue] of Object.entries(msg.payload)) {
-        const sensor = sensors.find(s => s.mqttKey === mqttKey);
+      for (const [rawKey, rawValue] of Object.entries(msg.payload)) {
+        let mqttKey = rawKey;
+        if (msg.section === "oht") {
+          const upper = rawKey.toUpperCase();
+          if (upper === "LT" || upper === "LEVEL") mqttKey = "LEVEL";
+          else if (upper === "PT" || upper === "PT_01") mqttKey = "PT_01";
+          else if (upper === "FLOW" || upper === "FLOW_IN") mqttKey = "FLOW";
+          else if (upper === "FLOW_TOTALIZER" || upper === "TOTALIZER") mqttKey = "TOTALIZER";
+        }
+        const sensor = sensors.find(s => s.mqttKey === mqttKey || s.mqttKey === rawKey);
         if (!sensor) continue;
         const value = typeof rawValue === "string" ? Number.parseFloat(rawValue) : Number(rawValue);
         if (!Number.isFinite(value) || value > 1e30) continue;

@@ -137,7 +137,30 @@ export const MqttProvider: React.FC<{ children: ReactNode; onMessage?: (message:
           results.push({ [tagName]: typeof val === 'object' && val !== null && 'value' in val ? (val as any).value : val });
           return results;
         }
+
+        // Handle nested equipment_data (Bhua Bicchiya OHT RTU cellular packet format)
+        let equipmentData = (parsed as any).equipment_data;
+        if (typeof equipmentData === 'string') {
+          try { equipmentData = JSON.parse(equipmentData); } catch {}
+        }
+        if (typeof equipmentData === 'object' && equipmentData !== null) {
+          Object.entries(equipmentData).forEach(([k, v]) => {
+            const raw = typeof v === 'object' && v !== null && 'value' in v ? (v as any).value : v;
+            const num = typeof raw === 'string' ? parseFloat(raw) : raw;
+            const finalVal = typeof num === 'number' && !isNaN(num) ? num : (raw as any);
+            // Push original key (e.g. LT, PT, FLOW_TOTALIZER, FLOW)
+            results.push({ [k]: finalVal });
+            // Also push normalized alias keys for complete SCADA compatibility
+            const upper = k.toUpperCase();
+            if (upper === 'LT') results.push({ LEVEL: finalVal });
+            if (upper === 'PT') results.push({ PT_01: finalVal });
+            if (upper === 'FLOW_TOTALIZER') results.push({ TOTALIZER: finalVal });
+            if (upper === 'FLOW') results.push({ FLOW_IN: finalVal });
+          });
+        }
+
         Object.entries(parsed).forEach(([key, value]) => {
+          if (key === 'equipment_data') return; // already extracted
           if (typeof value === 'object' && value !== null && 'value' in value) {
             results.push({ [key]: (value as { value: number | string }).value });
           } else {

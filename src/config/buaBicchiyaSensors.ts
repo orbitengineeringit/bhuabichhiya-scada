@@ -183,6 +183,27 @@ export const getPumpSensors = (section: SectionType): BuaBicchiyaSensor[] => {
 };
 
 // Valid MQTT keys per section (only keys that actually come from MQTT)
-export const VALID_OHT_KEYS = ['PT', 'PT_01', 'LEVEL', 'FLOW', 'FLOW_IN', 'FLOW_OUT', 'FCV', 'TOTALIZER'];
-export const VALID_INTAKE_KEYS = ['PT_01', 'PT_02', 'PT_03', 'PT_COM', 'LEVEL', 'FLOW', 'TOTALIZER', 'KW'];
-export const VALID_WTP_KEYS = ['CWR_LEVEL', 'BW_LEVEL', 'PT_01', 'PT_02', 'PT_03', 'CWR_PT_04', 'CWR_PT_05', 'CWR_PT_06', 'FLOW', 'FLOW_IN', 'FLOW_OUT', 'PH', 'CL', 'TR', 'RAW_PH', 'RAW_TR', 'CW_PH', 'CW_CL', 'CW_TR', 'TOTALIZER', 'KW'];
+export const VALID_OHT_KEYS = [
+  'PT', 'PT_01',
+  'LT', 'LEVEL',
+  'FLOW', 'FLOW_IN', 'FLOW_OUT',
+  'FCV',
+  'TOTALIZER', 'FLOW_TOTALIZER'
+];
+export const VALID_INTAKE_KEYS = ['PT_01', 'PT_02', 'PT_03', 'PT_COM', 'LEVEL', 'FLOW', 'TOTALIZER', 'FLOW_TOTALIZER', 'KW'];
+export const VALID_WTP_KEYS = ['CWR_LEVEL', 'BW_LEVEL', 'PT_01', 'PT_02', 'PT_03', 'CWR_PT_04', 'CWR_PT_05', 'CWR_PT_06', 'FLOW', 'FLOW_IN', 'FLOW_OUT', 'PH', 'CL', 'TR', 'RAW_PH', 'RAW_TR', 'CW_PH', 'CW_CL', 'CW_TR', 'TOTALIZER', 'FLOW_TOTALIZER', 'KW'];
+
+/**
+ * Normalizes incoming MQTT tag keys for OHT stations (handling both legacy and new RTU formats).
+ */
+export const normalizeOhtMqttKey = (key: string): string => {
+  const upper = key.toUpperCase();
+  if (upper === 'LT' || upper === 'LEVEL') return 'LEVEL';
+  if (upper === 'PT' || upper === 'PT_01') return 'PT_01';
+  if (upper === 'FLOW' || upper === 'FLOW_IN') return 'FLOW';
+  if (upper === 'FLOW_TOTALIZER' || upper === 'TOTALIZER') return 'TOTALIZER';
+  if (upper === 'FLOW_OUT') return 'FLOW_OUT';
+  if (upper === 'FCV') return 'FCV';
+  return key;
+};
+

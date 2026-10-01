@@ -8,7 +8,7 @@ import { logError, logDebug, logWarn, logInfo } from '@/lib/errorLogger';
 import {
   ALL_OHT_SENSORS, INTAKE_SENSORS, WTP_SENSORS, ALL_SENSORS,
   VALID_OHT_KEYS, VALID_INTAKE_KEYS, VALID_WTP_KEYS,
-  BuaBicchiyaSensor, PT_TO_PUMP_MAP,
+  BuaBicchiyaSensor, PT_TO_PUMP_MAP, normalizeOhtMqttKey,
 } from '@/config/buaBicchiyaSensors';
 
 interface TagUpdate {
@@ -296,15 +296,25 @@ export const useMqttTagSync = (
     const latestValues = new Map<string, number>();
     tags.forEach(t => latestValues.set(t.id, t.value));
 
-    for (const [mqttKey, rawValue] of Object.entries(payload)) {
-      if (!validKeys.includes(mqttKey)) continue;
+    // Track processed sensor IDs in this message cycle to avoid duplicate updates from alias keys
+    const processedSensorIds = new Set<string>();
+
+    for (const [rawKey, rawValue] of Object.entries(payload)) {
+      let mqttKey = rawKey;
+      if (section === 'oht') {
+        mqttKey = normalizeOhtMqttKey(rawKey);
+      }
+      if (!validKeys.includes(rawKey) && !validKeys.includes(mqttKey)) continue;
 
       const value = typeof rawValue === 'string' ? parseFloat(rawValue) : rawValue;
       
-      const sensor = sensors.find(s => s.mqttKey === mqttKey);
+      const sensor = sensors.find(s => s.mqttKey === mqttKey || s.mqttKey === rawKey);
       if (!sensor) continue;
 
       const sensorId = sensor.id;
+      if (processedSensorIds.has(sensorId)) continue;
+      processedSensorIds.add(sensorId);
+
       const existingTag = tags.find(t => t.id === sensorId);
 
       // --- MLTCV Layer 1: Raw Signal Validation (NaN/Overflow Checks) ---
