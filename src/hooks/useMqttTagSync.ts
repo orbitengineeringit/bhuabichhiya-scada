@@ -177,7 +177,7 @@ export const useMqttTagSync = (
         setter(prev => prev.map(tag => {
           if (tag.source === 'mqtt' && tag.lastDataTime) {
             const elapsed = nowTime - tag.lastDataTime.getTime();
-            const timeout = tag.section === 'intake' ? 15000 : tag.section === 'wtp' ? 45000 : 60000;
+            const timeout = 60000; // 60s grace timeout across all cellular stations
             if (elapsed > timeout && tag.status !== 'disconnected') {
               const msg = `Communication Loss: ${tag.label} (${tag.id}) is offline (No cellular GPRS data for ${Math.round(elapsed / 1000)}s)`;
               addAlarm({
