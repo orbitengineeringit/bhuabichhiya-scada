@@ -134,9 +134,9 @@ export const useMqttTagSync = (
       const wtpLast = lastMessageTime.current.get('wtp') || 0;
       const ohtLast = lastMessageTime.current.get('oht') || 0;
 
-      const isGatewayOffline = (intakeLast > 0 && nowTime - intakeLast > 65000) &&
-                               (wtpLast > 0 && nowTime - wtpLast > 65000) &&
-                               (ohtLast > 0 && nowTime - ohtLast > 65000);
+      const isGatewayOffline = (intakeLast > 0 && nowTime - intakeLast > 120000) &&
+                               (wtpLast > 0 && nowTime - wtpLast > 120000) &&
+                               (ohtLast > 0 && nowTime - ohtLast > 120000);
 
       if (isGatewayOffline) {
         const gwKey = 'SCADA-Gateway-Offline';
@@ -177,7 +177,7 @@ export const useMqttTagSync = (
         setter(prev => prev.map(tag => {
           if (tag.source === 'mqtt' && tag.lastDataTime) {
             const elapsed = nowTime - tag.lastDataTime.getTime();
-            const timeout = 60000; // 60s grace timeout across all cellular stations
+            const timeout = 120000; // 120s (2 min grace timeout across all cellular stations)
             if (elapsed > timeout && tag.status !== 'disconnected') {
               const msg = `Communication Loss: ${tag.label} (${tag.id}) is offline (No cellular GPRS data for ${Math.round(elapsed / 1000)}s)`;
               addAlarm({

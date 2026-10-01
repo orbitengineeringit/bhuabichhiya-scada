@@ -19,9 +19,9 @@ export const getTagConnection = (tag?: TagData | null): ConnectionState => {
   if (tag.lastDataTime) {
     const elapsed = Date.now() - new Date(tag.lastDataTime).getTime();
     
-    // Dynamic disconnect timeout based on section:
-    // Intake = 8s, OHT = 25s, WTP = 35s
-    const timeout = tag.section === 'intake' ? 8000 : tag.section === 'oht' ? 25000 : 35000;
+    // Cellular RTU telemetry transmits every ~60s.
+    // 120s (2 minutes / 2 full packet cycles) allows for network latency without flapping to OFF.
+    const timeout = 120000;
     
     if (elapsed > timeout) return 'no-data';
   } else {
