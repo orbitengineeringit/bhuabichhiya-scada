@@ -194,6 +194,33 @@ const SensorTrendModal: React.FC<SensorTrendModalProps> = ({
         if (data && data.length > 0) { allData = [...allData, ...data]; page++; hasMore = data.length === PAGE_SIZE; }
         else { hasMore = false; }
       }
+      // Fallback to hourly aggregates when raw logs have been pruned by 7-day retention
+      if (allData.length === 0) {
+        page = 0;
+        hasMore = true;
+        while (hasMore) {
+          const { data, error } = await supabase
+            .from('historian_aggregates')
+            .select('bucket_start, avg_value')
+            .eq('tag_id', tagId)
+            .eq('section', section)
+            .gte('bucket_start', startTime)
+            .lte('bucket_start', endTime)
+            .order('bucket_start', { ascending: true })
+            .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+          if (error) { logError('SensorTrend.fetchHistoricalAgg', error); break; }
+          if (data && data.length > 0) {
+            allData = [
+              ...allData,
+              ...data.map((row) => ({ timestamp: row.bucket_start, value: Number(row.avg_value ?? 0) })),
+            ];
+            page++;
+            hasMore = data.length === PAGE_SIZE;
+          } else {
+            hasMore = false;
+          }
+        }
+      }
       if (allData.length > 0) {
         setHistoricalData(allData.map((item) => ({
           timestamp: item.timestamp,

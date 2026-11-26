@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useScada } from '@/contexts/ScadaContext';
+import { ALL_SENSORS } from '@/config/buaBicchiyaSensors';
 import ExcelJS from 'exceljs';
 import { 
   Download, 
@@ -245,6 +246,17 @@ const TableRowSkeleton: React.FC = () => (
   </TableRow>
 );
 
+const SENSOR_META_BY_TAG = new Map(
+  ALL_SENSORS.map(s => [s.id, { label: s.label, unit: s.unit }])
+);
+
+interface HistoryFilterQuery {
+  gte(col: string, val: string): HistoryFilterQuery;
+  lte(col: string, val: string): HistoryFilterQuery;
+  in(col: string, vals: ('intake' | 'oht' | 'wtp')[]): HistoryFilterQuery;
+  or(filters: string): HistoryFilterQuery;
+}
+
 const HistoryPage: React.FC = () => {
   const today = new Date();
   const [globalFilters, setGlobalFilters] = useState<GlobalFilters>({
@@ -255,6 +267,7 @@ const HistoryPage: React.FC = () => {
   });
   const [logs, setLogs] = useState<HistorianLog[]>([]);
   const [totalCount, setTotalCount] = useState(0);
+  const [dataSource, setDataSource] = useState<'raw' | 'archived' | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
@@ -299,13 +312,37 @@ const HistoryPage: React.FC = () => {
       });
   }, [globalFilters.assets]);
 
+  const applyHistoryFilters = useCallback(<T,>(
+    q: T,
+    tsCol: 'timestamp' | 'bucket_start',
+    startTime: string,
+    endTime: string
+  ): T => {
+    const sectionFilters = getSectionFilters();
+    const ohtPrefixes = getOhtTagPrefixes();
+    let query = (q as unknown as HistoryFilterQuery).gte(tsCol, startTime).lte(tsCol, endTime);
+    if (sectionFilters.length > 0) query = query.in('section', sectionFilters);
+    if (ohtPrefixes.length > 0 && sectionFilters.includes('oht') && !globalFilters.assets.includes('intake') && !globalFilters.assets.includes('wtp')) {
+      query = query.or(ohtPrefixes.map(p => `tag_id.like.${p}%`).join(','));
+    }
+    return query as unknown as T;
+  }, [getSectionFilters, getOhtTagPrefixes, globalFilters.assets]);
+
+  const mapAggregateRow = (row: { id: string; tag_id: string; section: string; avg_value: number | null; bucket_start: string }): HistorianLog => ({
+    id: row.id,
+    tag_id: row.tag_id,
+    section: row.section,
+    value: Number(row.avg_value ?? 0),
+    timestamp: row.bucket_start,
+    tag_config: SENSOR_META_BY_TAG.get(row.tag_id) ?? null,
+  });
+
   const fetchLogs = useCallback(async (page: number = 1) => {
     if (!globalFilters.startDate || !globalFilters.endDate) {
       toast({ title: 'Select Date Range', description: 'Please select both start and end dates.', variant: 'destructive' });
       return;
     }
 
-    // Cancel any in-flight request
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
 
@@ -313,42 +350,65 @@ const HistoryPage: React.FC = () => {
     try {
       const startTime = startOfDay(globalFilters.startDate).toISOString();
       const endTime = endOfDay(globalFilters.endDate).toISOString();
-      const sectionFilters = getSectionFilters();
-      const ohtPrefixes = getOhtTagPrefixes();
-
-      // Run count and data queries in parallel
-      let countQuery = supabase.from('historian_logs').select('*', { count: 'exact', head: true })
-        .gte('timestamp', startTime).lte('timestamp', endTime);
-      if (sectionFilters.length > 0) countQuery = countQuery.in('section', sectionFilters);
-      // Apply specific OHT tag filtering
-      if (ohtPrefixes.length > 0 && sectionFilters.includes('oht') && !globalFilters.assets.includes('intake') && !globalFilters.assets.includes('wtp')) {
-        const ohtFilter = ohtPrefixes.map(p => `tag_id.like.${p}%`).join(',');
-        countQuery = countQuery.or(ohtFilter);
-      }
-
       const offset = (page - 1) * pageSize;
-      let dataQuery = supabase.from('historian_logs')
-        .select(`id, tag_id, section, value, timestamp, tag_config:tag_config_id (label, unit)`)
-        .gte('timestamp', startTime).lte('timestamp', endTime)
-        .order('timestamp', { ascending: false })
-        .order('section', { ascending: true })
-        .order('tag_id', { ascending: true })
-        .range(offset, offset + pageSize - 1);
-      if (sectionFilters.length > 0) dataQuery = dataQuery.in('section', sectionFilters);
-      if (ohtPrefixes.length > 0 && sectionFilters.includes('oht') && !globalFilters.assets.includes('intake') && !globalFilters.assets.includes('wtp')) {
-        const ohtFilter = ohtPrefixes.map(p => `tag_id.like.${p}%`).join(',');
-        dataQuery = dataQuery.or(ohtFilter);
-      }
+
+      const countQuery = applyHistoryFilters(
+        supabase.from('historian_logs').select('*', { count: 'exact', head: true }),
+        'timestamp', startTime, endTime
+      );
+      const dataQuery = applyHistoryFilters(
+        supabase.from('historian_logs')
+          .select(`id, tag_id, section, value, timestamp, tag_config:tag_config_id (label, unit)`)
+          .order('timestamp', { ascending: false })
+          .order('section', { ascending: true })
+          .order('tag_id', { ascending: true })
+          .range(offset, offset + pageSize - 1),
+        'timestamp', startTime, endTime
+      );
 
       const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
-
       if (countResult.error) throw countResult.error;
       if (dataResult.error) throw dataResult.error;
 
-      setTotalCount(countResult.count || 0);
-      setLogs(dataResult.data as unknown as HistorianLog[]);
+      let countVal = countResult.count || 0;
+      let rows = (dataResult.data || []) as unknown as HistorianLog[];
+      let sourceUsed: 'raw' | 'archived' = 'raw';
+
+      // Fallback to hourly aggregates when raw logs are empty (e.g. pruned by 7-day retention)
+      if (countVal === 0) {
+        const aggCountQ = applyHistoryFilters(
+          supabase.from('historian_aggregates').select('*', { count: 'exact', head: true }),
+          'bucket_start', startTime, endTime
+        );
+        const aggDataQ = applyHistoryFilters(
+          supabase.from('historian_aggregates')
+            .select('id, tag_id, section, avg_value, bucket_start')
+            .order('bucket_start', { ascending: false })
+            .order('section', { ascending: true })
+            .order('tag_id', { ascending: true })
+            .range(offset, offset + pageSize - 1),
+          'bucket_start', startTime, endTime
+        );
+        const [aggCountRes, aggDataRes] = await Promise.all([aggCountQ, aggDataQ]);
+        if (aggCountRes.error) throw aggCountRes.error;
+        if (aggDataRes.error) throw aggDataRes.error;
+        countVal = aggCountRes.count || 0;
+        rows = (aggDataRes.data || []).map(mapAggregateRow);
+        if (countVal > 0) sourceUsed = 'archived';
+      }
+
+      setTotalCount(countVal);
+      setLogs(rows);
+      setDataSource(countVal > 0 ? sourceUsed : null);
       setCurrentPage(page);
-      if (page === 1) toast({ title: 'Data Loaded', description: `Found ${countResult.count || 0} total records.` });
+      if (page === 1) {
+        toast({
+          title: 'Data Loaded',
+          description: sourceUsed === 'archived'
+            ? `Found ${countVal.toLocaleString()} archived hourly records.`
+            : `Found ${countVal.toLocaleString()} total records.`,
+        });
+      }
     } catch (error: any) {
       if (error?.name === 'AbortError') return;
       logError('History.fetchLogs', error);
@@ -356,7 +416,7 @@ const HistoryPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [globalFilters.startDate, globalFilters.endDate, getSectionFilters, getOhtTagPrefixes, globalFilters.assets, toast]);
+  }, [globalFilters.startDate, globalFilters.endDate, pageSize, applyHistoryFilters, toast]);
 
   useEffect(() => {
     if (autoRefresh && globalFilters.startDate && globalFilters.endDate && totalCount > 0) {
@@ -377,25 +437,26 @@ const HistoryPage: React.FC = () => {
     try {
       const startTime = startOfDay(globalFilters.startDate).toISOString();
       const endTime = endOfDay(globalFilters.endDate).toISOString();
-      const sectionFilters = getSectionFilters();
-      const ohtPrefixes = getOhtTagPrefixes();
-      const useOhtFilter = ohtPrefixes.length > 0 && sectionFilters.includes('oht') && !globalFilters.assets.includes('intake') && !globalFilters.assets.includes('wtp');
-      const ohtOr = useOhtFilter ? ohtPrefixes.map(p => `tag_id.like.${p}%`).join(',') : null;
 
-      const applyFilters = (q: any) => {
-        let r = q.gte('timestamp', startTime).lte('timestamp', endTime);
-        if (sectionFilters.length > 0) r = r.in('section', sectionFilters);
-        if (ohtOr) r = r.or(ohtOr);
-        return r;
-      };
-
-      // Phase 1: count + estimate
-      let countQ = supabase.from('historian_logs').select('*', { count: 'exact', head: true });
-      countQ = applyFilters(countQ);
-      const { count: total, error: countErr } = await countQ;
+      // Phase 1: count + estimate (raw logs first, then hourly aggregates fallback)
+      const { count: rawTotal, error: countErr } = await applyHistoryFilters(
+        supabase.from('historian_logs').select('*', { count: 'exact', head: true }),
+        'timestamp', startTime, endTime
+      );
       if (countErr) throw countErr;
-      const totalCountVal = total || 0;
-      // Estimate: ~3500 rows/sec end-to-end on average connection
+
+      let totalCountVal = rawTotal || 0;
+      let useAggregates = false;
+      if (totalCountVal === 0) {
+        const { count: aggTotal, error: aggErr } = await applyHistoryFilters(
+          supabase.from('historian_aggregates').select('*', { count: 'exact', head: true }),
+          'bucket_start', startTime, endTime
+        );
+        if (aggErr) throw aggErr;
+        totalCountVal = aggTotal || 0;
+        useAggregates = totalCountVal > 0;
+      }
+
       const estSec = Math.max(2, Math.ceil(totalCountVal / 3500));
       setExportProgress(p => ({ ...p, phase: 'fetching', total: totalCountVal, estSec }));
 
@@ -405,9 +466,9 @@ const HistoryPage: React.FC = () => {
         return;
       }
 
-      // Phase 2: parallel paginated fetch (8 pages concurrent)
+      // Phase 2: parallel paginated fetch
       const PAGE = 1000;
-      const totalPages = Math.ceil(totalCountVal / PAGE);
+      const totalExportPages = Math.ceil(totalCountVal / PAGE);
       const CONCURRENCY = 6;
       const allData: HistorianLog[] = new Array(totalCountVal);
       let fetchedSoFar = 0;
@@ -416,20 +477,37 @@ const HistoryPage: React.FC = () => {
       const worker = async () => {
         while (true) {
           const pageIdx = nextPage++;
-          if (pageIdx >= totalPages) return;
+          if (pageIdx >= totalExportPages) return;
           const from = pageIdx * PAGE;
           const to = from + PAGE - 1;
-          let q = supabase.from('historian_logs')
-            .select(`id, tag_id, section, value, timestamp, tag_config:tag_config_id (label, unit)`)
-            .order('timestamp', { ascending: false })
-            .range(from, to);
-          q = applyFilters(q);
-          const { data, error } = await q;
-          if (error) throw error;
-          if (data) {
-            for (let i = 0; i < data.length; i++) allData[from + i] = data[i] as unknown as HistorianLog;
-            fetchedSoFar += data.length;
-            setExportProgress(p => ({ ...p, fetched: fetchedSoFar }));
+          if (useAggregates) {
+            const { data, error } = await applyHistoryFilters(
+              supabase.from('historian_aggregates')
+                .select('id, tag_id, section, avg_value, bucket_start')
+                .order('bucket_start', { ascending: false })
+                .range(from, to),
+              'bucket_start', startTime, endTime
+            );
+            if (error) throw error;
+            if (data) {
+              for (let i = 0; i < data.length; i++) allData[from + i] = mapAggregateRow(data[i]);
+              fetchedSoFar += data.length;
+              setExportProgress(p => ({ ...p, fetched: fetchedSoFar }));
+            }
+          } else {
+            const { data, error } = await applyHistoryFilters(
+              supabase.from('historian_logs')
+                .select(`id, tag_id, section, value, timestamp, tag_config:tag_config_id (label, unit)`)
+                .order('timestamp', { ascending: false })
+                .range(from, to),
+              'timestamp', startTime, endTime
+            );
+            if (error) throw error;
+            if (data) {
+              for (let i = 0; i < data.length; i++) allData[from + i] = data[i] as unknown as HistorianLog;
+              fetchedSoFar += data.length;
+              setExportProgress(p => ({ ...p, fetched: fetchedSoFar }));
+            }
           }
         }
       };
@@ -636,7 +714,7 @@ const HistoryPage: React.FC = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [globalFilters.startDate, globalFilters.endDate, globalFilters.assets, getSectionFilters, getOhtTagPrefixes, toast, plantName, exportInterval]);
+  }, [globalFilters.startDate, globalFilters.endDate, applyHistoryFilters, toast, plantName, exportInterval]);
 
   const paginationInfo = useMemo(() => {
     if (totalPages <= 1) return null;
@@ -732,6 +810,11 @@ const HistoryPage: React.FC = () => {
               {totalCount > 0 && (
                 <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 sm:ml-2">
                   {totalCount.toLocaleString()} total
+                </span>
+              )}
+              {dataSource === 'archived' && (
+                <span className="text-[10px] sm:text-xs font-semibold px-2 sm:px-2.5 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                  Hourly Archive
                 </span>
               )}
             </CardTitle>
